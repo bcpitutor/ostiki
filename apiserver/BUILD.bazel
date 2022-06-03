@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "apiserver",
+    srcs = [
+        "server.go",
+        "server_ban.go",
+        "server_domain.go",
+        "server_group.go",
+        "server_misc.go",
+        "server_ticket.go",
+    ],
+    importpath = "github.com/tiki-systems/tikiserver/apiserver",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//appconfig",
+        "//logger",
+        "//middleware",
+        "//models",
+        "//repositories",
+        "//routes",
+        "//services",
+        "@com_github_gin_contrib_cors//:cors",
+        "@com_github_gin_gonic_gin//:gin",
+        "@org_uber_go_dig//:dig",
+    ],
+)

@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "db",
+    srcs = [
+        "dynamoDB_ban.go",
+        "dynamoDB_domain.go",
+        "dynamoDB_group.go",
+        "dynamoDB_init.go",
+        "dynamoDB_session.go",
+        "dynamoDB_ticket.go",
+    ],
+    importpath = "github.com/tiki-systems/tikiserver/db",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//appconfig",
+        "//logger",
+        "//models",
+        "@com_github_aws_aws_sdk_go_v2//aws",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_credentials//:credentials",
+        "@com_github_aws_aws_sdk_go_v2_feature_dynamodb_attributevalue//:attributevalue",
+        "@com_github_aws_aws_sdk_go_v2_service_dynamodb//:dynamodb",
+        "@com_github_aws_aws_sdk_go_v2_service_dynamodb//types",
+    ],
+)

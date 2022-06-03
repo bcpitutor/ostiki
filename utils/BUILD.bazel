@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "utils",
+    srcs = ["utils_homefolder.go"],
+    importpath = "github.com/tiki-systems/tikiserver/utils",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_denisbrodbeck_machineid//:machineid"],
+)

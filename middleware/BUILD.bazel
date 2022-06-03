@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "middleware",
+    srcs = ["mw_auth.go"],
+    importpath = "github.com/tiki-systems/tikiserver/middleware",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//actions",
+        "//appconfig",
+        "//repositories",
+        "//services",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_google_uuid//:uuid",
+        "@com_github_spf13_viper//:viper",
+        "@org_golang_google_api//idtoken",
+        "@org_uber_go_zap//:zap",
+    ],
+)

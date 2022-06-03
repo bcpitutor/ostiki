@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+if [ $# -lt 1 ]; then
+    echo "Usage: compile [linux_amd64|darwin_amd64|darwin_arm64"
+    exit 1
+fi
+
+if [ "$1" != "linux_amd64" ] && [ "$1" != "darwin_amd64" ] && [ "$1" != "darwin_arm64" ]; then
+    echo "Usage: compile [linux_amd64|darwin_amd64|darwin_arm64"
+    exit 1
+fi
+
+echo "Compiling for $1"
+bazel build --platforms=@io_bazel_rules_go//go/toolchain:$1 //:tikiserver
+cp -f bazel-bin/tikiserver_/tikiserver tikiserver_$1

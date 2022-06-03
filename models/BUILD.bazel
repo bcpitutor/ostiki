@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "models",
+    srcs = [
+        "ban.go",
+        "cache_layer.go",
+        "db_layer.go",
+        "domain.go",
+        "session.go",
+        "ticket.go",
+        "ticket_group.go",
+        "vars.go",
+    ],
+    importpath = "github.com/tiki-systems/tikiserver/models",
+    visibility = ["//visibility:public"],
+)

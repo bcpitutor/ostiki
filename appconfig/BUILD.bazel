@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "appconfig",
+    srcs = [
+        "app_config.go",
+        "constants.go",
+    ],
+    importpath = "github.com/tiki-systems/tikiserver/appconfig",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_spf13_viper//:viper"],
+)

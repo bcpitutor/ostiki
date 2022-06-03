@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "actions",
+    srcs = [
+        "act_domain_control.go",
+        "act_group_membership.go",
+        "act_obtain_aws_role.go",
+        "act_revoke.go",
+        "act_rtoken.go",
+    ],
+    importpath = "github.com/tiki-systems/tikiserver/actions",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//repositories",
+        "@com_github_spf13_viper//:viper",
+        "@org_uber_go_zap//:zap",
+    ],
+)

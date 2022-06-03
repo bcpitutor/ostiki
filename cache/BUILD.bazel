@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cache",
+    srcs = [
+        "hazelcast.go",
+        "no_cache.go",
+    ],
+    importpath = "github.com/tiki-systems/tikiserver/cache",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//appconfig",
+        "//logger",
+        "//models",
+        "@com_github_hazelcast_hazelcast_go_client//:hazelcast-go-client",
+        "@com_github_hazelcast_hazelcast_go_client//cluster",
+    ],
+)

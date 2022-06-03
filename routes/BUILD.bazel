@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "routes",
+    srcs = [
+        "routes_ban.go",
+        "routes_check_token.go",
+        "routes_domain.go",
+        "routes_google_cb.go",
+        "routes_group.go",
+        "routes_init_handler.go",
+        "routes_ticket.go",
+        "routes_version.go",
+        "routes_welcome.go",
+    ],
+    importpath = "github.com/tiki-systems/tikiserver/routes",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//actions",
+        "//middleware",
+        "//models",
+        "//version",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_google_uuid//:uuid",
+        "@org_golang_x_oauth2//:oauth2",
+        "@org_golang_x_oauth2//google",
+    ],
+)
