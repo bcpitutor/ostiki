@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/tiki-systems/tikiserver/apiserver"
@@ -15,9 +16,14 @@ import (
 )
 
 func main() {
-	container := dig.New()
-
 	config := appconfig.GetAppConfig()
+
+	if len(os.Args) > 1 && os.Args[1] == "--dumpConfig" {
+		fmt.Printf("%+v\n", config)
+		os.Exit(0)
+	}
+
+	container := dig.New()
 
 	// Handle other db types, if implemented.
 	if strings.ToLower(config.TikiDBConfig.DbType) == "dynamodb" {
