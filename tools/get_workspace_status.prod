@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+echo TS_STABLE_GIT_COMMIT $(git rev-parse HEAD)
+echo TS_CURRENT_TAG $(git describe --tags $(git rev-list --tags --max-count=1))
+echo TS_TAG $(git describe --tags $(git rev-list --tags --max-count=1))
+echo TS_BUILD_TIME $(date)
+echo TS_BUILD_MACHINE $(uname -a)

@@ -10,11 +10,24 @@ import (
 var (
 	configFileName    = "tikiserver"
 	defaultConfigPath = []string{".", "./config"}
-	// defaultConfig     = map[string]interface{}{
-	// 	"LISTENER_HOST":      "0.0.0.0",
-	// 	"LISTENER_PORT":      9090,
-	// 	"LOGGER_OUTPUT_FILE": "/tmp/HELLOtikiserver.log",
-	// }
+	defaultConfig     = map[string]interface{}{
+		"TIKI_DEPLOYMENT":                       "local",
+		"LISTENER_PORT":                         9090,
+		"LISTENER_HOST":                         "0.0.0.0",
+		"LOG_LEVEL":                             "INFO",
+		"LOGGER_OUTPUT_FILE":                    "/tmp/tikiserver.log",
+		"DB_CONFIG.DB_TYPE":                     "DynamoDB",
+		"DB_CONFIG.DB_REGION":                   "us-west-1",
+		"DB_CONFIG.DB_PROFILE_ID":               "",
+		"DB_CONFIG.DB_PROFILE_SECRET":           "",
+		"DB_CONFIG.LOCAL_SUFFIX":                "dev",
+		"AUTHENTICATION_PROVIDER.NAME":          "Google",
+		"AUTHENTICATION_PROVIDER.CLIENT_ID":     "",
+		"AUTHENTICATION_PROVIDER.CLIENT_SECRET": "",
+		"AUTHENTICATION_PROVIDER.REDIRECT_URL":  "",
+		"AUTHENTICATION_PROVIDER.SCOPES":        "",
+		"AUTHENTICATION_PROVIDER.GT_ISS":        "",
+	}
 )
 
 type AppConfig struct {
@@ -74,28 +87,8 @@ func GetAppConfig() *AppConfig {
 		os.Exit(-1)
 	}
 
-	// for k, v := range defaultConfig {
-	// 	viper.SetDefault(k, v)
-	// }
-
-	if viper.Get("LOG_LEVEL") == nil {
-		viper.Set("LOG_LEVEL", "INFO")
-	}
-
-	if viper.Get("TIKI_DEPLOYMENT") == nil {
-		viper.Set("TIKI_DEPLOYMENT", "local")
-	}
-
-	if viper.Get("LOGGER_OUTPUT_FILE") == nil {
-		viper.Set("LOGGER_OUTPUT_FILE", "/tmp/tikiserver.log")
-	}
-
-	if viper.Get("LISTENER_PORT") == nil {
-		viper.Set("LISTENER_PORT", "9090")
-	}
-
-	if viper.Get("LISTENER_HOST") == nil {
-		viper.Set("LISTENER_HOST", "0.0.0.0")
+	for k, v := range defaultConfig {
+		viper.SetDefault(k, v)
 	}
 
 	if viper.Get("DB_CONFIG") == nil {
@@ -103,7 +96,7 @@ func GetAppConfig() *AppConfig {
 		os.Exit(0)
 	}
 
-	if viper.Get("DB_CONFIG.DB_TYPE") == nil {
+	if viper.GetString("DB_CONFIG.DB_TYPE") == "" {
 		fmt.Printf("DB_CONFIG.DB_TYPE is required but has not been set\n")
 		os.Exit(0)
 	}
@@ -117,15 +110,3 @@ func GetAppConfig() *AppConfig {
 
 	return Appconf
 }
-
-// type AppConfigResult struct {
-// 	dig.Out
-
-// 	AppConfig *AppConfig `name:"serverparams"`
-// }
-
-// func ProvideAppConfigRepository() AppConfigResult {
-// 	return AppConfigResult{
-// 		AppConfig: GetAppConfig(),
-// 	}
-// }

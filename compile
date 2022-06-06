@@ -11,5 +11,8 @@ if [ "$1" != "linux_amd64" ] && [ "$1" != "darwin_amd64" ] && [ "$1" != "darwin_
 fi
 
 echo "Compiling for $1"
-bazel build --platforms=@io_bazel_rules_go//go/toolchain:$1 //:tikiserver
+bazel build --stamp --workspace_status_command=tools/get_workspace_status.prod --strip=always --compilation_mode opt --platforms=@io_bazel_rules_go//go/toolchain:$1 //:tikiserver
 cp -f bazel-bin/tikiserver_/tikiserver tikiserver_$1
+
+
+
