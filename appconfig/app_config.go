@@ -9,7 +9,7 @@ import (
 
 var (
 	configFileName    = "tikiserver"
-	defaultConfigPath = []string{".", "./config"}
+	defaultConfigPath = []string{".", "./config", "./testconfig"}
 	defaultConfig     = map[string]interface{}{
 		"TIKI_DEPLOYMENT":                              "local",
 		"LISTENER_PORT":                                9090,
@@ -28,8 +28,8 @@ var (
 		"AUTHENTICATION_PROVIDER.GOOGLE_CLIENT_ID":     "",
 		"AUTHENTICATION_PROVIDER.GOOGLE_CLIENT_SECRET": "",
 		"AUTHENTICATION_PROVIDER.REDIRECT_URI":         "",
-		"AUTHENTICATION_PROVIDER.SCOPES":               "",
-		"AUTHENTICATION_PROVIDER.GT_ISS":               "",
+		"AUTHENTICATION_PROVIDER.SCOPES":               []string{"https://www.googleapis.com/auth/userinfo.email"},
+		"AUTHENTICATION_PROVIDER.GT_ISS":               []string{"https://accounts.google.com", "accounts.google.com"},
 		"AUTHENTICATION_PROVIDER.GT_HD":                "",
 	}
 )
@@ -103,16 +103,6 @@ func GetAppConfig() *AppConfig {
 		viper.SetDefault(k, v)
 	}
 
-	if viper.Get("DB_CONFIG") == nil {
-		fmt.Printf("DB_CONFIG is required but has not been set\n")
-		os.Exit(0)
-	}
-
-	if viper.Get("STS_CONFIG") == nil {
-		fmt.Printf("STS_CONFIG is required but has not been set\n")
-		os.Exit(0)
-	}
-
 	if viper.GetString("DB_CONFIG.DB_TYPE") == "" {
 		fmt.Printf("DB_CONFIG.DB_TYPE is required but has not been set\n")
 		os.Exit(0)
@@ -123,6 +113,16 @@ func GetAppConfig() *AppConfig {
 
 		fmt.Println(Appconf)
 		os.Exit(-1)
+	}
+
+	if viper.Get("DB_CONFIG") == nil {
+		fmt.Printf("DB_CONFIG is required but has not been set\n")
+		os.Exit(0)
+	}
+
+	if viper.Get("STS_CONFIG") == nil {
+		fmt.Printf("STS_CONFIG is required but has not been set\n")
+		os.Exit(0)
 	}
 
 	return Appconf
