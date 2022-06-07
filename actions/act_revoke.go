@@ -1,7 +1,7 @@
 package actions
 
 import (
-	"github.com/tiki-systems/tikiserver/repositories"
+	"github.com/bcpitutor/ostiki/repositories"
 	"go.uber.org/zap"
 )
 

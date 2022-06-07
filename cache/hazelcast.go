@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/logger"
+	"github.com/bcpitutor/ostiki/models"
 	"github.com/hazelcast/hazelcast-go-client"
 	"github.com/hazelcast/hazelcast-go-client/cluster"
-	"github.com/tiki-systems/tikiserver/appconfig"
-	"github.com/tiki-systems/tikiserver/logger"
-	"github.com/tiki-systems/tikiserver/models"
 )
 
 type HazelcastDriver struct {

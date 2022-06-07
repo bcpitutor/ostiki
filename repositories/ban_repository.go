@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/tiki-systems/tikiserver/models"
+	"github.com/bcpitutor/ostiki/models"
 	"go.uber.org/dig"
 )
 

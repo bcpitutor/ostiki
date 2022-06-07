@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "logger",
     srcs = ["tiki_logger.go"],
-    importpath = "github.com/tiki-systems/tikiserver/logger",
+    importpath = "github.com/bcpitutor/ostiki/logger",
     visibility = ["//visibility:public"],
     deps = [
         "//appconfig",

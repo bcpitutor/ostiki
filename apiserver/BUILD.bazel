@@ -10,7 +10,7 @@ go_library(
         "server_misc.go",
         "server_ticket.go",
     ],
-    importpath = "github.com/tiki-systems/tikiserver/apiserver",
+    importpath = "github.com/bcpitutor/ostiki/apiserver",
     visibility = ["//visibility:public"],
     deps = [
         "//appconfig",

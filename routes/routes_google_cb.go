@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bcpitutor/ostiki/middleware"
+	"github.com/bcpitutor/ostiki/models"
 	"github.com/gin-gonic/gin"
-	"github.com/tiki-systems/tikiserver/middleware"
-	"github.com/tiki-systems/tikiserver/models"
 )
 
 type UserInfoRespBody struct {

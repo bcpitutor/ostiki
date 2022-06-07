@@ -4,7 +4,6 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"fmt"
-	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -12,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/bcpitutor/ostiki/appconfig"
 )
 
 type AWSService struct {
@@ -27,8 +27,8 @@ type AwsCredentials struct {
 	Region          string
 }
 
-func GetAWS() (*AWSService, error) {
-	region := os.Getenv("AWS_REGION")
+func GetAWS(cnfg *appconfig.AppConfig) (*AWSService, error) {
+	region := cnfg.TikiSTSConfig.STSRegion
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
 		config.WithRegion(region),

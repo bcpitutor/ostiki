@@ -10,7 +10,7 @@ go_library(
         "session_repository.go",
         "ticket_repository.go",
     ],
-    importpath = "github.com/tiki-systems/tikiserver/repositories",
+    importpath = "github.com/bcpitutor/ostiki/repositories",
     visibility = ["//visibility:public"],
     deps = [
         "//models",

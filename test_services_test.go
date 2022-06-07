@@ -3,11 +3,14 @@ package main
 import (
 	"testing"
 
-	"github.com/tiki-systems/tikiserver/services"
+	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/services"
 )
 
 func TestAwsService(t *testing.T) {
-	aws, err := services.GetAWS()
+	config := appconfig.GetAppConfig()
+
+	aws, err := services.GetAWS(config)
 
 	if err != nil {
 		t.Errorf("Failed to get AWS service: %v", err)

@@ -1,16 +1,17 @@
 package apiserver
 
 import (
+	"html/template"
 	"time"
 
+	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/logger"
+	"github.com/bcpitutor/ostiki/middleware"
+	"github.com/bcpitutor/ostiki/models"
+	"github.com/bcpitutor/ostiki/repositories"
+	"github.com/bcpitutor/ostiki/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/tiki-systems/tikiserver/appconfig"
-	"github.com/tiki-systems/tikiserver/logger"
-	"github.com/tiki-systems/tikiserver/middleware"
-	"github.com/tiki-systems/tikiserver/models"
-	"github.com/tiki-systems/tikiserver/repositories"
-	"github.com/tiki-systems/tikiserver/services"
 	"go.uber.org/dig"
 )
 
@@ -74,6 +75,12 @@ func (s *Server) Run() {
 	}
 
 	ginEngine := gin.Default()
+	html := template.Must(template.ParseFiles("html/pages/index.html"))
+	ginEngine.SetHTMLTemplate(html)
+
+	ginEngine.Static("/static", "./static")
+	ginEngine.LoadHTMLGlob("html/pages/*")
+
 	ginEngine.Use(
 		cors.New(cors.Config{
 			AllowAllOrigins:  true,

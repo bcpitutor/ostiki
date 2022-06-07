@@ -5,13 +5,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/tiki-systems/tikiserver/apiserver"
-	"github.com/tiki-systems/tikiserver/appconfig"
-	"github.com/tiki-systems/tikiserver/cache"
-	"github.com/tiki-systems/tikiserver/db"
-	"github.com/tiki-systems/tikiserver/logger"
-	"github.com/tiki-systems/tikiserver/repositories"
-	"github.com/tiki-systems/tikiserver/services"
+	"github.com/bcpitutor/ostiki/apiserver"
+	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/cache"
+	"github.com/bcpitutor/ostiki/db"
+	"github.com/bcpitutor/ostiki/logger"
+	"github.com/bcpitutor/ostiki/repositories"
+	"github.com/bcpitutor/ostiki/services"
+	"github.com/bcpitutor/ostiki/version"
 	"go.uber.org/dig"
 )
 
@@ -19,6 +20,7 @@ func main() {
 	config := appconfig.GetAppConfig()
 
 	if len(os.Args) > 1 && os.Args[1] == "--dumpConfig" {
+		fmt.Printf("Config for version: %s\n", version.VersionDetails.Version)
 		fmt.Printf("%+v\n", config)
 		os.Exit(0)
 	}

@@ -3,12 +3,12 @@ package main
 import (
 	"testing"
 
-	"github.com/tiki-systems/tikiserver/appconfig"
-	"github.com/tiki-systems/tikiserver/db"
-	"github.com/tiki-systems/tikiserver/logger"
-	"github.com/tiki-systems/tikiserver/models"
-	"github.com/tiki-systems/tikiserver/repositories"
-	"github.com/tiki-systems/tikiserver/services"
+	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/db"
+	"github.com/bcpitutor/ostiki/logger"
+	"github.com/bcpitutor/ostiki/models"
+	"github.com/bcpitutor/ostiki/repositories"
+	"github.com/bcpitutor/ostiki/services"
 )
 
 func TestGetAllTickets(t *testing.T) {
@@ -111,7 +111,7 @@ func TestDeleteTicket(t *testing.T) {
 func TestSetTicketSecret(t *testing.T) {
 	config := appconfig.GetAppConfig()
 	logger := logger.GetTikiLogger(config)
-	aws, err := services.GetAWS()
+	aws, err := services.GetAWS(config)
 	if err != nil {
 		t.Fatalf("Failed to create AWS service: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestSetTicketSecret(t *testing.T) {
 func TestGetTicketSecret(t *testing.T) {
 	config := appconfig.GetAppConfig()
 	logger := logger.GetTikiLogger(config)
-	aws, err := services.GetAWS()
+	aws, err := services.GetAWS(config)
 	if err != nil {
 		t.Fatalf("Failed to create AWS service: %v", err)
 	}

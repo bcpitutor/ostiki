@@ -13,7 +13,7 @@ go_library(
         "routes_version.go",
         "routes_welcome.go",
     ],
-    importpath = "github.com/tiki-systems/tikiserver/routes",
+    importpath = "github.com/bcpitutor/ostiki/routes",
     visibility = ["//visibility:public"],
     deps = [
         "//actions",

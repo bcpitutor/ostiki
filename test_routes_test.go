@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/db"
+	"github.com/bcpitutor/ostiki/logger"
+	"github.com/bcpitutor/ostiki/middleware"
+	"github.com/bcpitutor/ostiki/models"
+	"github.com/bcpitutor/ostiki/repositories"
+	"github.com/bcpitutor/ostiki/routes"
 	"github.com/gin-gonic/gin"
-	"github.com/tiki-systems/tikiserver/appconfig"
-	"github.com/tiki-systems/tikiserver/db"
-	"github.com/tiki-systems/tikiserver/logger"
-	"github.com/tiki-systems/tikiserver/middleware"
-	"github.com/tiki-systems/tikiserver/models"
-	"github.com/tiki-systems/tikiserver/repositories"
-	"github.com/tiki-systems/tikiserver/routes"
 )
 
 func TestRouteListTickets(t *testing.T) {

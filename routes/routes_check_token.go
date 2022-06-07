@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/bcpitutor/ostiki/middleware"
 	"github.com/gin-gonic/gin"
-	"github.com/tiki-systems/tikiserver/middleware"
 	"golang.org/x/oauth2"
 )
 

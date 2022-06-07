@@ -12,6 +12,6 @@ go_library(
         "ticket_group.go",
         "vars.go",
     ],
-    importpath = "github.com/tiki-systems/tikiserver/models",
+    importpath = "github.com/bcpitutor/ostiki/models",
     visibility = ["//visibility:public"],
 )

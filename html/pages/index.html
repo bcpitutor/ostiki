@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>iTutor TikiServer & Tikitool </title>
+    <script type="text/javascript" src="/static/js/api.js"></script>  
+
+</head>
+<body>
+    <div class="max-w-md mx-auto">
+        <!-- <div class="flex justify-center m-2 mt-16"> -->
+        <div class="flex justify-center m-2 mt-16">
+            <div class="divide-y p-6 ring-2 ring-blue-300 ring-inset rounded-md"> 
+                <div class="font-bold text-xl">
+                    iTutor TikiServer & TikiTool
+                </div>
+                
+                <div class="">
+                    <div class="row mt-6 text-lg">
+                        <span class="font-extralight">Hello  </span> 
+                        <span  id="email" class="font-bold text-blue-500">  {{ .email}}</span> 
+                    </div>
+                
+                  
+                    <div class="pt-4">
+                        <span class="font-extralight"> 
+                            We got your credentials. Run your tikitool application.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-center m-2 mt-12">
+        
+            <div class="justify-center"> 
+                <div class="row flex justify-center font-extralight text-sm">
+                    in order to use tikitool
+                </div>
+                <div id="button1" class="row">
+                    <button id="btn1" onclick="postToLocal()" type="button" class="w-48 inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-green-700 focus:outline-none">
+                        <!-- Heroicon name: solid/check -->
+                        <svg id="btn-svg" class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        
+                        <span id="btntext"> Save </span>
+                        </button>
+                </div>
+                </div>
+            </div>
+
+            <div id="token" class="w-64 text-ellipsis overflow-hidden flex flow-root flex text-xs font-extralight text-white"> 
+                {{ .token}}
+            </div>
+
+            <div id="rToken" class="w-64 text-ellipsis overflow-hidden flex flow-root flex text-xs font-extralight text-white"> 
+                {{ .rToken}}
+            </div>
+
+            <div id="clientID" class="w-64 text-ellipsis overflow-hidden flex flow-root flex text-xs font-extralight text-white"> 
+                {{ .clientID}}
+            </div>
+
+            <div id="clientSecret" class="w-64 text-ellipsis overflow-hidden flex flow-root flex text-xs font-extralight text-white"> 
+                {{ .clientSecret}}
+            </div>
+
+            <div id="port" class="w-64 text-ellipsis overflow-hidden flex flow-root flex text-xs font-extralight text-white"> 
+                {{ .port}}
+            </div>
+
+    </div>
+</body>
+</html>

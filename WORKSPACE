@@ -46,8 +46,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_xerrors",
     importpath = "golang.org/x/xerrors",
-    sum = "h1:GGU+dLjvlC3qDwqYgL6UgRmHXhOOgns0bZu2Ty5mm6U=",
-    version = "v0.0.0-20220411194840-2f41105eb62f",
+    sum = "h1:5Pf6pFKu98ODmgnpvkJ3kFUOQGGLIzLIkbzUHp47618=",
+    version = "v0.0.0-20220517211312-f3a8303e98df",
 )
 
 load("//:deps.bzl", "go_dependencies")
@@ -103,8 +103,8 @@ load("@io_bazel_rules_docker//container:pull.bzl", "container_pull")
 
 container_pull(
     name = "alpine_linux_amd64",
+    digest = "sha256:4ff3ca91275773af45cb4b0834e12b7eb47d1c18f770a0b151381cd227f4c253",
     registry = "index.docker.io",
     repository = "library/alpine",
     tag = "3.16.0",
-    digest = "sha256:4ff3ca91275773af45cb4b0834e12b7eb47d1c18f770a0b151381cd227f4c253"
 )

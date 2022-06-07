@@ -3,10 +3,10 @@ package main
 import (
 	"testing"
 
-	"github.com/tiki-systems/tikiserver/appconfig"
-	"github.com/tiki-systems/tikiserver/db"
-	"github.com/tiki-systems/tikiserver/logger"
-	"github.com/tiki-systems/tikiserver/repositories"
+	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/db"
+	"github.com/bcpitutor/ostiki/logger"
+	"github.com/bcpitutor/ostiki/repositories"
 )
 
 func TestGetAllGroups(t *testing.T) {

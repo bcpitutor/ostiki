@@ -4,12 +4,10 @@ go_library(
     name = "actions",
     srcs = [
         "act_domain_control.go",
-        "act_group_membership.go",
-        "act_obtain_aws_role.go",
         "act_revoke.go",
         "act_rtoken.go",
     ],
-    importpath = "github.com/tiki-systems/tikiserver/actions",
+    importpath = "github.com/bcpitutor/ostiki/actions",
     visibility = ["//visibility:public"],
     deps = [
         "//repositories",

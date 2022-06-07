@@ -3,9 +3,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "services",
     srcs = ["aws.go"],
-    importpath = "github.com/tiki-systems/tikiserver/services",
+    importpath = "github.com/bcpitutor/ostiki/services",
     visibility = ["//visibility:public"],
     deps = [
+        "//appconfig",
         "@com_github_aws_aws_sdk_go_v2//aws",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_service_kms//:kms",

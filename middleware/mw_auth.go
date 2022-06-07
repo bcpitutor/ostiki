@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bcpitutor/ostiki/actions"
+	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/repositories"
+	"github.com/bcpitutor/ostiki/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
-	"github.com/tiki-systems/tikiserver/actions"
-	"github.com/tiki-systems/tikiserver/appconfig"
-	"github.com/tiki-systems/tikiserver/repositories"
-	"github.com/tiki-systems/tikiserver/services"
 	"go.uber.org/zap"
 	"google.golang.org/api/idtoken"
 )
@@ -117,8 +117,12 @@ func Auth(c *gin.Context, vars GinHandlerVars) {
 	// 	c.Next()
 	// }
 
-	aud := viper.GetString("GOOGLE_CLIENT_ID")
-	hd := viper.GetString("GT_HD")
+	//aud := viper.GetString("GOOGLE_CLIENT_ID")
+	aud := config.TikiAuthenticationProviderConfig.ClientId
+
+	//hd := viper.GetString("GT_HD")
+	hd := config.TikiAuthenticationProviderConfig.GtHd
+
 	// issuers := viper.GetStringSlice("TIKI_GT_ISS")
 	// cSecret := viper.GetString("GOOGLE_CLIENT_SECRET")
 
@@ -261,7 +265,6 @@ func Auth(c *gin.Context, vars GinHandlerVars) {
 	user_hd := fmt.Sprintf("%v", claims["hd"])
 
 	if actions.IsUserRevoked(banRepository, logger, user_email) {
-
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Your authentication is not valid at the time. Please contact your System Administrator.",
 			"status":  "error",

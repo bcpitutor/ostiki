@@ -1,6 +1,6 @@
 package cache
 
-import "github.com/tiki-systems/tikiserver/models"
+import "github.com/bcpitutor/ostiki/models"
 
 type NoCacheDriver struct {
 	Type string

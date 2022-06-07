@@ -10,7 +10,7 @@ go_library(
         "dynamoDB_session.go",
         "dynamoDB_ticket.go",
     ],
-    importpath = "github.com/tiki-systems/tikiserver/db",
+    importpath = "github.com/bcpitutor/ostiki/db",
     visibility = ["//visibility:public"],
     deps = [
         "//appconfig",

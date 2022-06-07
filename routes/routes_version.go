@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bcpitutor/ostiki/middleware"
+	"github.com/bcpitutor/ostiki/version"
 	"github.com/gin-gonic/gin"
-	"github.com/tiki-systems/tikiserver/middleware"
-	"github.com/tiki-systems/tikiserver/version"
 )
 
 func VersionInfomation(c *gin.Context, vars middleware.GinHandlerVars) {

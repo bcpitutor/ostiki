@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/bcpitutor/ostiki/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/tiki-systems/tikiserver/middleware"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"

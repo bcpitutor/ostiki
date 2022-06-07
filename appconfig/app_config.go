@@ -11,22 +11,26 @@ var (
 	configFileName    = "tikiserver"
 	defaultConfigPath = []string{".", "./config"}
 	defaultConfig     = map[string]interface{}{
-		"TIKI_DEPLOYMENT":                       "local",
-		"LISTENER_PORT":                         9090,
-		"LISTENER_HOST":                         "0.0.0.0",
-		"LOG_LEVEL":                             "INFO",
-		"LOGGER_OUTPUT_FILE":                    "/tmp/tikiserver.log",
-		"DB_CONFIG.DB_TYPE":                     "DynamoDB",
-		"DB_CONFIG.DB_REGION":                   "us-west-1",
-		"DB_CONFIG.DB_PROFILE_ID":               "",
-		"DB_CONFIG.DB_PROFILE_SECRET":           "",
-		"DB_CONFIG.LOCAL_SUFFIX":                "dev",
-		"AUTHENTICATION_PROVIDER.NAME":          "Google",
-		"AUTHENTICATION_PROVIDER.CLIENT_ID":     "",
-		"AUTHENTICATION_PROVIDER.CLIENT_SECRET": "",
-		"AUTHENTICATION_PROVIDER.REDIRECT_URL":  "",
-		"AUTHENTICATION_PROVIDER.SCOPES":        "",
-		"AUTHENTICATION_PROVIDER.GT_ISS":        "",
+		"TIKI_DEPLOYMENT":                              "local",
+		"LISTENER_PORT":                                9090,
+		"LISTENER_HOST":                                "0.0.0.0",
+		"LOG_LEVEL":                                    "INFO",
+		"LOGGER_OUTPUT_FILE":                           "/tmp/tikiserver.log",
+		"DB_CONFIG.DB_TYPE":                            "DynamoDB",
+		"DB_CONFIG.DB_PROFILE_REGION":                  "us-west-1",
+		"DB_CONFIG.DB_PROFILE_ID":                      "",
+		"DB_CONFIG.DB_PROFILE_SECRET":                  "",
+		"DB_CONFIG.LOCAL_SUFFIX":                       "dev",
+		"STS_CONFIG.STS_PROFILE_ID":                    "",
+		"STS_CONFIG.STS_PROFILE_SECRET":                "",
+		"STS_CONFIG.STS_REGION":                        "us-west-1",
+		"AUTHENTICATION_PROVIDER.NAME":                 "Google",
+		"AUTHENTICATION_PROVIDER.GOOGLE_CLIENT_ID":     "",
+		"AUTHENTICATION_PROVIDER.GOOGLE_CLIENT_SECRET": "",
+		"AUTHENTICATION_PROVIDER.REDIRECT_URI":         "",
+		"AUTHENTICATION_PROVIDER.SCOPES":               "",
+		"AUTHENTICATION_PROVIDER.GT_ISS":               "",
+		"AUTHENTICATION_PROVIDER.GT_HD":                "",
 	}
 )
 
@@ -35,6 +39,7 @@ type AppConfig struct {
 	ListenerHost                     string                 `mapstructure:"LISTENER_HOST"`
 	LoggerOutputFile                 string                 `mapstructure:"LOGGER_OUTPUT_FILE"`
 	TikiDBConfig                     DBConfig               `mapstructure:"DB_CONFIG"`
+	TikiSTSConfig                    STSConfig              `mapstructure:"STS_CONFIG"`
 	TikiInMemoryStoreConfig          InMemoryStoreConfig    `mapstructure:"IN_MEMORY_STORE_CONFIG"`
 	TikiOpenSearchConfig             OpenSearchConfig       `mapstructure:"OPEN_SEARCH_CONFIG"`
 	TikiAuthenticationProviderConfig AuthenticationProvider `mapstructure:"AUTHENTICATION_PROVIDER"`
@@ -50,6 +55,12 @@ type DBConfig struct {
 	LocalSuffix     string `mapstructure:"LOCAL_SUFFIX"`
 }
 
+type STSConfig struct {
+	STSProfileId     string `mapstructure:"STS_PROFILE_ID"`
+	STSProfileSecret string `mapstructure:"STS_PROFILE_SECRET"`
+	STSRegion        string `mapstructure:"STS_REGION"`
+}
+
 type InMemoryStoreConfig struct {
 	StoreType     string `mapstructure:"STORE_TYPE"`
 	ClusterName   string `mapstructure:"CLUSTER_NAME"`
@@ -63,11 +74,12 @@ type OpenSearchConfig struct {
 
 type AuthenticationProvider struct {
 	Name         string   `mapstructure:"NAME"`
-	ClientId     string   `mapstructure:"CLIENT_ID"`
-	ClientSecret string   `mapstructure:"CLIENT_SECRET"`
+	ClientId     string   `mapstructure:"GOOGLE_CLIENT_ID"`
+	ClientSecret string   `mapstructure:"GOOGLE_CLIENT_SECRET"`
 	RedirectUri  string   `mapstructure:"REDIRECT_URI"`
 	Scopes       []string `mapstructure:"SCOPES"`
 	GtIss        []string `mapstructure:"GT_ISS"`
+	GtHd         string   `mapstructure:"GT_HD"`
 }
 
 func GetAppConfig() *AppConfig {
@@ -93,6 +105,11 @@ func GetAppConfig() *AppConfig {
 
 	if viper.Get("DB_CONFIG") == nil {
 		fmt.Printf("DB_CONFIG is required but has not been set\n")
+		os.Exit(0)
+	}
+
+	if viper.Get("STS_CONFIG") == nil {
+		fmt.Printf("STS_CONFIG is required but has not been set\n")
 		os.Exit(0)
 	}
 

@@ -6,7 +6,7 @@ go_library(
         "app_config.go",
         "constants.go",
     ],
-    importpath = "github.com/tiki-systems/tikiserver/appconfig",
+    importpath = "github.com/bcpitutor/ostiki/appconfig",
     visibility = ["//visibility:public"],
     deps = ["@com_github_spf13_viper//:viper"],
 )

@@ -1,9 +1,9 @@
 package apiserver
 
 import (
+	"github.com/bcpitutor/ostiki/middleware"
+	"github.com/bcpitutor/ostiki/routes"
 	"github.com/gin-gonic/gin"
-	"github.com/tiki-systems/tikiserver/middleware"
-	"github.com/tiki-systems/tikiserver/routes"
 )
 
 func addBanHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {

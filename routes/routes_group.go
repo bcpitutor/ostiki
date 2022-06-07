@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bcpitutor/ostiki/middleware"
+	"github.com/bcpitutor/ostiki/models"
 	"github.com/gin-gonic/gin"
-	"github.com/tiki-systems/tikiserver/middleware"
-	"github.com/tiki-systems/tikiserver/models"
 )
 
 func ListGroups(c *gin.Context, vars middleware.GinHandlerVars) {

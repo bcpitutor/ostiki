@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/tiki-systems/tikiserver/appconfig"
+	"github.com/bcpitutor/ostiki/appconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

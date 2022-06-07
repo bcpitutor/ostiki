@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/tiki-systems/tikiserver/models"
+	"github.com/bcpitutor/ostiki/models"
 )
 
 // Ban Table
@@ -57,7 +57,7 @@ func (db DynamoDBDriver) GetBannedUserByEmail(userEmail string) (models.BannedUs
 	}
 
 	if resp.Count <= 0 {
-		return bannedUser, fmt.Errorf("User %s is not banned", userEmail)
+		return bannedUser, fmt.Errorf("404")
 	}
 
 	err = attributevalue.UnmarshalMap(resp.Items[0], &bannedUser)

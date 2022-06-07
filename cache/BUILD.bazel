@@ -6,7 +6,7 @@ go_library(
         "hazelcast.go",
         "no_cache.go",
     ],
-    importpath = "github.com/tiki-systems/tikiserver/cache",
+    importpath = "github.com/bcpitutor/ostiki/cache",
     visibility = ["//visibility:public"],
     deps = [
         "//appconfig",
