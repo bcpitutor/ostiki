@@ -16,12 +16,13 @@ func ListBannedUsers(c *gin.Context, vars middleware.GinHandlerVars) {
 	groupRepository := vars.GroupRepository
 
 	adminEmail := c.Request.Header.Get("email")
+
 	if !groupRepository.IsUserInTikiadmins(adminEmail) {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 			"status":  "error",
 			"message": fmt.Sprintf("User %s is not authorized to access banned users", adminEmail),
 			"data":    "",
-			"count":   "",
+			"count":   0,
 		})
 		return
 	}

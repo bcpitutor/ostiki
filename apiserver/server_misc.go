@@ -35,6 +35,12 @@ func addMiscHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
 		},
 	)
 
+	ginEngine.GET("/session/list",
+		func(ctx *gin.Context) {
+			routes.ListSessions(ctx, vars)
+		},
+	)
+
 	ginEngine.Use(
 		func(ctx *gin.Context) {
 			middleware.Auth(ctx, vars)

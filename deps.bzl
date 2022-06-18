@@ -521,12 +521,6 @@ def go_dependencies():
         version = "v0.9.7",
     )
     go_repository(
-        name = "com_github_hazelcast_hazelcast_go_client",
-        importpath = "github.com/hazelcast/hazelcast-go-client",
-        sum = "h1:TZ3UnsnwuJ2rukWMb11miL38jfFG8GRbnh8al0A/Nk0=",
-        version = "v1.2.0",
-    )
-    go_repository(
         name = "com_github_ianlancetaylor_demangle",
         importpath = "github.com/ianlancetaylor/demangle",
         sum = "h1:mV02weKRL81bEnm8A0HT1/CAelMQDBuQIfLw8n+d6xI=",

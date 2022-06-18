@@ -35,8 +35,17 @@ func ListDomains(c *gin.Context, vars middleware.GinHandlerVars) {
 func GetDomain(c *gin.Context, vars middleware.GinHandlerVars) {
 	domainRepository := vars.DomainRepository
 
-	domainPath := c.Param("domainPath")
-	domain, err := domainRepository.GetDomain(domainPath)
+	var domainPath map[string]string
+	err := c.ShouldBindJSON(&domainPath)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Domain name couldn't found. Check your request again.",
+		})
+		return
+	}
+
+	domain, err := domainRepository.GetDomain(domainPath["domainPath"])
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status":  "error",
@@ -49,7 +58,7 @@ func GetDomain(c *gin.Context, vars middleware.GinHandlerVars) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "success",
-		"domain":   domain,
+		"data":     domain,
 		"newToken": newToken,
 	})
 }

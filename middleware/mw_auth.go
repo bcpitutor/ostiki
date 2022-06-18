@@ -13,7 +13,6 @@ import (
 	"github.com/bcpitutor/ostiki/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/api/idtoken"
 )
@@ -62,14 +61,21 @@ func Auth(c *gin.Context, vars GinHandlerVars) {
 	reqId, _ := uuid.NewRandom()
 	c.Request.Header.Set("x-tsreq-id", reqId.String())
 
+	logger.Sugar().Debugf("Request ID: %s", reqId.String())
 	// local development bypass -- TIKISERVER_ENV="local"
 	if config.Deployment == "local" {
 		logger.Sugar().Info("Local development vars is set")
-		if viper.GetString("DEVELOPER_EMAIL") != "" {
-			c.Request.Header.Set("email", viper.GetString("DEVELOPER_EMAIL"))
+		if config.DeveloperEmail != "" {
+			c.Request.Header.Set("email", config.DeveloperEmail)
 		} else {
 			c.Request.Header.Set("email", "localdev-tikiserver@itutor.com")
 		}
+
+		// if viper.GetString("DEVELOPER_EMAIL") != "" {
+		// 	c.Request.Header.Set("email", viper.GetString("DEVELOPER_EMAIL"))
+		// } else {
+		// 	c.Request.Header.Set("email", "localdev-tikiserver@itutor.com")
+		// }
 		c.Request.Header.Set("sub", "")
 		c.Request.Header.Set("hd", "")
 		c.Next()
@@ -84,7 +90,7 @@ func Auth(c *gin.Context, vars GinHandlerVars) {
 			"statusCode": http.StatusUnauthorized,
 			"message":    "Go and run tikitool auth again.",
 			"status":     "error",
-			"deatils":    "-0T",
+			"details":    "-0T",
 		})
 		return
 	}
@@ -204,6 +210,7 @@ func Auth(c *gin.Context, vars GinHandlerVars) {
 			c.Set("newToken", gRefTokenResp.IdToken)
 			newTokenData := fmt.Sprintf("Bearer %s", gRefTokenResp.IdToken)
 			c.Request.Header.Set("Authorization", newTokenData)
+			fmt.Printf("token is refreshed and set in request. %s", newTokenData)
 
 			claims := payload.Claims
 

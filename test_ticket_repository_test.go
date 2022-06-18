@@ -20,7 +20,7 @@ func TestGetAllTickets(t *testing.T) {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
 
-	trr := repositories.ProvideTicketRepository(dynamo, nil)
+	trr := repositories.ProvideTicketRepository(dynamo)
 	_, err = trr.TicketRepository.GetAllTickets()
 	if err != nil {
 		t.Fatalf("Failed to get all tickets: %v", err)
@@ -36,7 +36,7 @@ func TestQueryTicketByPath(t *testing.T) {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
 
-	trr := repositories.ProvideTicketRepository(dynamo, nil)
+	trr := repositories.ProvideTicketRepository(dynamo)
 	_, err = trr.TicketRepository.QueryTicketByPath("tickets/itutor/infra/development/admin/aws")
 	if err != nil {
 		t.Fatalf("Failed to query ticket by path: %v", err)
@@ -52,7 +52,7 @@ func TestDoesTicketExist(t *testing.T) {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
 
-	trr := repositories.ProvideTicketRepository(dynamo, nil)
+	trr := repositories.ProvideTicketRepository(dynamo)
 	exists := trr.TicketRepository.DoesTicketExist("tickets/itutor/infra/development/admin/aws")
 	if !exists {
 		t.Fatalf("Ticket does not exist")
@@ -68,7 +68,7 @@ func TestCreateTicket(t *testing.T) {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
 
-	trr := repositories.ProvideTicketRepository(dynamo, nil)
+	trr := repositories.ProvideTicketRepository(dynamo)
 	ticket := models.Ticket{
 		TicketPath: "tickets/itutor/test-tickets",
 		TicketType: "awsTicket",
@@ -101,7 +101,7 @@ func TestDeleteTicket(t *testing.T) {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
 
-	trr := repositories.ProvideTicketRepository(dynamo, nil)
+	trr := repositories.ProvideTicketRepository(dynamo)
 	err = trr.TicketRepository.DeleteTicket("tickets/itutor/test-tickets", "awsTicket")
 	if err != nil {
 		t.Fatalf("Failed to delete ticket: %v", err)
@@ -121,7 +121,7 @@ func TestSetTicketSecret(t *testing.T) {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
 
-	trr := repositories.ProvideTicketRepository(dynamo, nil)
+	trr := repositories.ProvideTicketRepository(dynamo)
 	ticket := models.Ticket{
 		TicketPath:   "tickets/itutor/test-secret-ticket",
 		TicketType:   "secretTicket",
@@ -160,7 +160,7 @@ func TestGetTicketSecret(t *testing.T) {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
 
-	trr := repositories.ProvideTicketRepository(dynamo, nil)
+	trr := repositories.ProvideTicketRepository(dynamo)
 
 	encrypted, err := trr.TicketRepository.GetTicketSecret("tickets/itutor/test-secret-ticket")
 	if err != nil {

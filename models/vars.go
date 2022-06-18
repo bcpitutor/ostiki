@@ -47,8 +47,3 @@ var KmsOperation = KMSOPERATION{
 	Encrypt: "encrypt",
 	Decrypt: "decrypt",
 }
-
-type CacheLayerDriver struct {
-	Type   string
-	Client any
-}

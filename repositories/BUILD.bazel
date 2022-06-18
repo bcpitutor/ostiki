@@ -6,6 +6,7 @@ go_library(
         "ban_repository.go",
         "domain_repository.go",
         "group_repository.go",
+        "in_memory_objects_repository.go",
         "permission_repository.go",
         "session_repository.go",
         "ticket_repository.go",

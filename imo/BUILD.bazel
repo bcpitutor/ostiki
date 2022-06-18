@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "imo",
+    srcs = [
+        "listener.go",
+        "sender.go",
+    ],
+    importpath = "github.com/bcpitutor/ostiki/imo",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//appconfig",
+        "//utils",
+    ],
+)

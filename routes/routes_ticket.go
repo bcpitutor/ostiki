@@ -52,6 +52,15 @@ func GetTicket(c *gin.Context, vars middleware.GinHandlerVars) {
 	newToken, _ := c.Get("newToken")
 
 	ticket, err := ticketRepository.QueryTicketByPath(ticketPath)
+	if err != nil {
+		message := fmt.Sprintf("Ticket not found for path: %s", ticketPath)
+		c.AbortWithStatusJSON(http.StatusOK, gin.H{
+			"status":  "error",
+			"message": message,
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "success",
 		"data":     ticket,
@@ -65,7 +74,6 @@ func ListTickets(c *gin.Context, vars middleware.GinHandlerVars) {
 
 	// -- Control Section -- //
 	userEmail := c.Request.Header.Get("email")
-	fmt.Printf("userEmail: %s\n", userEmail)
 	if !permissionRepository.CanUserPerformTicketOperation(userEmail, models.Operation.List) {
 		message := fmt.Sprintf("Permission denied. user: [%v], operation : [%v]", userEmail, models.Operation.List)
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
@@ -119,7 +127,7 @@ func CreateTicket(c *gin.Context, vars middleware.GinHandlerVars) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"details": err,
-			"message": "check your json post data",
+			"message": "check your json post data 1",
 		})
 		return
 	}
@@ -173,7 +181,7 @@ func DeleteTicket(c *gin.Context, vars middleware.GinHandlerVars) {
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
-			"message": "check your json post data",
+			"message": "check your json post data 2",
 		})
 		return
 	}
@@ -283,6 +291,7 @@ func ObtainTicket(c *gin.Context, vars middleware.GinHandlerVars) {
 	ticketRepository := vars.TicketRepository
 	awsService := vars.AWSService
 
+	fmt.Printf("we are in obtain ticket\n")
 	if err := c.ShouldBindJSON(&rBody); err != nil {
 		message := fmt.Sprintf("%v", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -379,7 +388,7 @@ func TicketSetSecret(c *gin.Context, vars middleware.GinHandlerVars) {
 		message := fmt.Sprintf("marshall error, check you post data: [%v] ", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
-			"message": "check your json post data",
+			"message": "check your json post data 3",
 			"details": message,
 		})
 		return
@@ -457,7 +466,7 @@ func TicketGetSecret(c *gin.Context, vars middleware.GinHandlerVars) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"details": message,
-			"message": "check your json post data",
+			"message": "check your json post data 4",
 		})
 		return
 	}
@@ -496,9 +505,18 @@ func TicketGetSecret(c *gin.Context, vars middleware.GinHandlerVars) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"details": message,
-			"message": "check your json post data",
+			"message": "check your json post data 5",
 		})
 		return
+	}
+
+	fmt.Printf("Secret data: [%v]\n", secretData)
+	if secretData == "" {
+		message := fmt.Sprintf("Secret data is empty on ticket [%v]", secretTicketData.TicketPath)
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": message,
+		})
 	}
 
 	clearText, err := awsService.GetDecryptedText(secretData)
@@ -507,7 +525,7 @@ func TicketGetSecret(c *gin.Context, vars middleware.GinHandlerVars) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"details": message,
-			"message": "check your json post data",
+			"message": "Decryption error, secret data is not valid",
 		})
 		return
 	}

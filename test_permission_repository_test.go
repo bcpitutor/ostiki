@@ -18,8 +18,8 @@ func TestIsUserInTikiadmins(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
-	grt := repositories.ProvideGroupRepository(dynamo, nil)
-	trt := repositories.ProvideTicketRepository(dynamo, nil)
+	grt := repositories.ProvideGroupRepository(dynamo)
+	trt := repositories.ProvideTicketRepository(dynamo)
 	prt := repositories.ProvidePermissionRepository(dynamo, grt.GroupRepository, trt.TicketRepository)
 
 	if prt.PermissionRepository.IsUserInTikiadmins("ozgur.demir@itutor.com") {
@@ -43,8 +43,8 @@ func TestCanUserPerformTicketOperation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
-	grt := repositories.ProvideGroupRepository(dynamo, nil)
-	trt := repositories.ProvideTicketRepository(dynamo, nil)
+	grt := repositories.ProvideGroupRepository(dynamo)
+	trt := repositories.ProvideTicketRepository(dynamo)
 	prt := repositories.ProvidePermissionRepository(dynamo, grt.GroupRepository, trt.TicketRepository)
 
 	if prt.PermissionRepository.CanUserPerformTicketOperation("ozgur.demir@itutor.com", models.Operation.Delete) {
@@ -68,8 +68,8 @@ func TestCanUserAccessToTicket(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
-	grt := repositories.ProvideGroupRepository(dynamo, nil)
-	trt := repositories.ProvideTicketRepository(dynamo, nil)
+	grt := repositories.ProvideGroupRepository(dynamo)
+	trt := repositories.ProvideTicketRepository(dynamo)
 	prt := repositories.ProvidePermissionRepository(dynamo, grt.GroupRepository, trt.TicketRepository)
 
 	if prt.PermissionRepository.CanUserAccessToTicket("ozgur.demir@itutor.com", "tickets/itutor/infra/prod/admin/aws") {
@@ -93,8 +93,8 @@ func TestIsUserAllowedByDomainScope(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
-	grt := repositories.ProvideGroupRepository(dynamo, nil)
-	trt := repositories.ProvideTicketRepository(dynamo, nil)
+	grt := repositories.ProvideGroupRepository(dynamo)
+	trt := repositories.ProvideTicketRepository(dynamo)
 	prt := repositories.ProvidePermissionRepository(dynamo, grt.GroupRepository, trt.TicketRepository)
 
 	if prt.PermissionRepository.IsUserAllowedByDomainScope(

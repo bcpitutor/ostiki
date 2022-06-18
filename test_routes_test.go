@@ -30,8 +30,8 @@ func TestRouteListTickets(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create DynamoDB driver: %v", err)
 			}
-			grt := repositories.ProvideGroupRepository(dynamo, nil)
-			trt := repositories.ProvideTicketRepository(dynamo, nil)
+			grt := repositories.ProvideGroupRepository(dynamo)
+			trt := repositories.ProvideTicketRepository(dynamo)
 			prt := repositories.ProvidePermissionRepository(dynamo, grt.GroupRepository, trt.TicketRepository)
 
 			routes.ListTickets(
@@ -92,8 +92,8 @@ func TestRouteGetTicket(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create DynamoDB driver: %v", err)
 			}
-			grt := repositories.ProvideGroupRepository(dynamo, nil)
-			trt := repositories.ProvideTicketRepository(dynamo, nil)
+			grt := repositories.ProvideGroupRepository(dynamo)
+			trt := repositories.ProvideTicketRepository(dynamo)
 			prt := repositories.ProvidePermissionRepository(dynamo, grt.GroupRepository, trt.TicketRepository)
 			routes.GetTicket(
 				ctx,

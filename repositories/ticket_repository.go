@@ -6,8 +6,7 @@ import (
 )
 
 type TicketRepository struct {
-	DBLayer    models.DBLayer
-	CacheLayer models.CacheLayer
+	DBLayer models.DBLayer
 }
 
 type TicketRepositoryResult struct {
@@ -15,11 +14,10 @@ type TicketRepositoryResult struct {
 	TicketRepository *TicketRepository
 }
 
-func ProvideTicketRepository(db models.DBLayer, cl models.CacheLayer) TicketRepositoryResult {
+func ProvideTicketRepository(db models.DBLayer) TicketRepositoryResult {
 	return TicketRepositoryResult{
 		TicketRepository: &TicketRepository{
-			DBLayer:    db,
-			CacheLayer: cl,
+			DBLayer: db,
 		},
 	}
 }

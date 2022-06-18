@@ -9,6 +9,7 @@ go_library(
         "routes_google_cb.go",
         "routes_group.go",
         "routes_init_handler.go",
+        "routes_session.go",
         "routes_ticket.go",
         "routes_version.go",
         "routes_welcome.go",

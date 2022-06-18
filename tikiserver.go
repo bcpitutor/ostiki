@@ -7,8 +7,8 @@ import (
 
 	"github.com/bcpitutor/ostiki/apiserver"
 	"github.com/bcpitutor/ostiki/appconfig"
-	"github.com/bcpitutor/ostiki/cache"
 	"github.com/bcpitutor/ostiki/db"
+	"github.com/bcpitutor/ostiki/imo"
 	"github.com/bcpitutor/ostiki/logger"
 	"github.com/bcpitutor/ostiki/repositories"
 	"github.com/bcpitutor/ostiki/services"
@@ -25,6 +25,9 @@ func main() {
 		os.Exit(0)
 	}
 
+	//imoSender := imo.NewIMOSender()
+	// imoListener := imo.NewIMOListener(8671, imoSender)
+
 	container := dig.New()
 
 	// Handle other db types, if implemented.
@@ -33,6 +36,10 @@ func main() {
 	}
 
 	container.Provide(appconfig.GetAppConfig)
+	container.Provide(imo.NewIMOSender)
+	container.Provide(imo.NewIMOListener)
+
+	// container.Provide(imoListener)
 	container.Provide(logger.GetTikiLogger)
 	container.Provide(services.GetAWS)
 
@@ -42,16 +49,7 @@ func main() {
 	container.Provide(repositories.ProvideGroupRepository)
 	container.Provide(repositories.ProvideTicketRepository)
 	container.Provide(repositories.ProvidePermissionRepository)
-
-	// Handle other cache types, if implemented.
-	if strings.ToLower(config.TikiInMemoryStoreConfig.StoreType) == "hazelcast" {
-		fmt.Printf("Loading Hazelcast driver into the container\n")
-		container.Provide(cache.NewHazelcastDriver)
-	} else {
-		fmt.Printf("No cache will be used\n")
-		container.Provide(cache.NewNoCacheDriver)
-	}
-
+	container.Provide(repositories.ProvideIMORepository)
 	container.Provide(apiserver.ProvideServer)
 
 	// initiate server

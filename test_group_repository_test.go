@@ -17,7 +17,7 @@ func TestGetAllGroups(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
-	grt := repositories.ProvideGroupRepository(dynamo, nil)
+	grt := repositories.ProvideGroupRepository(dynamo)
 	_, err = grt.GroupRepository.GetAllGroups()
 	if err != nil {
 		t.Fatalf("Failed to get all groups: %v", err)
@@ -33,7 +33,7 @@ func TestGetGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create DynamoDB driver: %v", err)
 	}
-	grt := repositories.ProvideGroupRepository(dynamo, nil)
+	grt := repositories.ProvideGroupRepository(dynamo)
 	_, err = grt.GroupRepository.GetGroup("lms-test1-admins")
 	if err != nil {
 		t.Fatalf("Failed to get group: %v", err)

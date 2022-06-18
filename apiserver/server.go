@@ -1,10 +1,12 @@
 package apiserver
 
 import (
+	"fmt"
 	"html/template"
 	"time"
 
 	"github.com/bcpitutor/ostiki/appconfig"
+	"github.com/bcpitutor/ostiki/imo"
 	"github.com/bcpitutor/ostiki/logger"
 	"github.com/bcpitutor/ostiki/middleware"
 	"github.com/bcpitutor/ostiki/models"
@@ -28,7 +30,8 @@ type ServerParams struct {
 	GroupRepository      *repositories.GroupRepository
 	TicketRepository     *repositories.TicketRepository
 	DBLayer              models.DBLayer
-	CacheLayer           models.CacheLayer `optional:"true"`
+	IMOSender            *imo.IMOSender
+	IMOListener          *imo.IMOListener
 }
 type Server struct {
 	appConfig            *appconfig.AppConfig
@@ -41,7 +44,8 @@ type Server struct {
 	groupRepository      repositories.GroupRepository
 	ticketRepository     repositories.TicketRepository
 	dbLayer              models.DBLayer
-	cacheLayer           models.CacheLayer
+	imoSender            imo.IMOSender
+	imoListener          imo.IMOListener
 }
 
 func ProvideServer(params ServerParams) *Server {
@@ -56,7 +60,8 @@ func ProvideServer(params ServerParams) *Server {
 		groupRepository:      *params.GroupRepository,
 		ticketRepository:     *params.TicketRepository,
 		dbLayer:              params.DBLayer,
-		cacheLayer:           params.CacheLayer,
+		imoSender:            *params.IMOSender,
+		imoListener:          *params.IMOListener,
 	}
 }
 
@@ -73,6 +78,9 @@ func (s *Server) Run() {
 	default:
 		gin.SetMode("release")
 	}
+
+	go s.imoListener.Listen()
+	go s.imoSender.JoinCluster()
 
 	ginEngine := gin.Default()
 	html := template.Must(template.ParseFiles("html/pages/index.html"))
@@ -92,20 +100,43 @@ func (s *Server) Run() {
 		}),
 	)
 
-	addMiscHandlers(ginEngine, middleware.GinHandlerVars{
-		Logger:            logger,
-		AppConfig:         config,
-		SessionRepository: &s.sessionRepository,
-		BanRepository:     &s.banRepository,
+	ginEngine.Use(func(ctx *gin.Context) {
+		middleware.Auth(ctx, middleware.GinHandlerVars{
+			Logger:               logger,
+			AppConfig:            config,
+			BanRepository:        &s.banRepository,
+			DomainRepository:     &s.domainRepository,
+			GroupRepository:      &s.groupRepository,
+			TicketRepository:     &s.ticketRepository,
+			SessionRepository:    &s.sessionRepository,
+			PermissionRepository: &s.permissionRepository,
+			AWSService:           s.awsServices,
+		})
 	})
+
+	addMiscHandlers(ginEngine,
+		middleware.GinHandlerVars{
+			Logger:               logger,
+			AppConfig:            config,
+			BanRepository:        &s.banRepository,
+			DomainRepository:     &s.domainRepository,
+			GroupRepository:      &s.groupRepository,
+			TicketRepository:     &s.ticketRepository,
+			SessionRepository:    &s.sessionRepository,
+			PermissionRepository: &s.permissionRepository,
+			AWSService:           s.awsServices,
+		},
+	)
 
 	addDomainHandlers(ginEngine,
 		middleware.GinHandlerVars{
 			Logger:               logger,
 			AppConfig:            config,
+			BanRepository:        &s.banRepository,
 			DomainRepository:     &s.domainRepository,
 			GroupRepository:      &s.groupRepository,
 			TicketRepository:     &s.ticketRepository,
+			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
 			AWSService:           s.awsServices,
 		},
@@ -115,8 +146,11 @@ func (s *Server) Run() {
 		middleware.GinHandlerVars{
 			Logger:               logger,
 			AppConfig:            config,
+			BanRepository:        &s.banRepository,
+			DomainRepository:     &s.domainRepository,
 			GroupRepository:      &s.groupRepository,
 			TicketRepository:     &s.ticketRepository,
+			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
 			AWSService:           s.awsServices,
 		},
@@ -126,8 +160,11 @@ func (s *Server) Run() {
 		middleware.GinHandlerVars{
 			Logger:               logger,
 			AppConfig:            config,
+			BanRepository:        &s.banRepository,
+			DomainRepository:     &s.domainRepository,
 			GroupRepository:      &s.groupRepository,
 			TicketRepository:     &s.ticketRepository,
+			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
 			AWSService:           s.awsServices,
 		},
@@ -135,14 +172,39 @@ func (s *Server) Run() {
 
 	addBanHandlers(ginEngine,
 		middleware.GinHandlerVars{
-			Logger:        logger,
-			AppConfig:     config,
-			BanRepository: &s.banRepository,
+			Logger:               logger,
+			AppConfig:            config,
+			BanRepository:        &s.banRepository,
+			DomainRepository:     &s.domainRepository,
+			GroupRepository:      &s.groupRepository,
+			TicketRepository:     &s.ticketRepository,
+			SessionRepository:    &s.sessionRepository,
+			PermissionRepository: &s.permissionRepository,
+			AWSService:           s.awsServices,
 		},
 	)
 
+	// api := slack.New(
+	// 	"xoxb-130454266228-3658119338853-ihyylZoeg5X6KhWj4KuObE2e",
+	// 	slack.OptionDebug(true),
+	// )
+	// channelID, timestamp, err := api.PostMessage(
+	// 	"C03KTMC6H0R",
+	// 	slack.MsgOptionUsername("tiki"),
+	// 	slack.MsgOptionText("Tiki is up and running!", false),
+	// )
+	// if err != nil {
+	// 	fmt.Printf("%s\n", err)
+	// }
+	// fmt.Printf("Message sent to channel %s at %s", channelID, timestamp)
+	msg := fmt.Sprintf("Server started in deployment: %s", config.Deployment)
+	if config.Deployment == "local" {
+		msg = fmt.Sprintf("%s, Developer Email: %s", msg, config.DeveloperEmail)
+	}
+
+	sugar.Infof(msg)
 	sugar.Infof(
-		"Server started to listen address on %s:%s",
+		"Server has started to listen address on %s:%s",
 		config.ListenerHost,
 		config.ListenerPort,
 	)

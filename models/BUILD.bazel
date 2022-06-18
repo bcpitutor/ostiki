@@ -4,7 +4,6 @@ go_library(
     name = "models",
     srcs = [
         "ban.go",
-        "cache_layer.go",
         "db_layer.go",
         "domain.go",
         "session.go",

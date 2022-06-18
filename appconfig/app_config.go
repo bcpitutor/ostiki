@@ -9,9 +9,11 @@ import (
 
 var (
 	configFileName    = "tikiserver"
-	defaultConfigPath = []string{".", "./config", "./testconfig"}
+	defaultConfigPath = []string{"./testconfig", ".", "./config"}
 	defaultConfig     = map[string]interface{}{
+		"IMO_NET_PORT":                                 8671,
 		"TIKI_DEPLOYMENT":                              "local",
+		"DEVELOPER_EMAIL":                              "",
 		"LISTENER_PORT":                                9090,
 		"LISTENER_HOST":                                "0.0.0.0",
 		"LOG_LEVEL":                                    "INFO",
@@ -40,11 +42,13 @@ type AppConfig struct {
 	LoggerOutputFile                 string                 `mapstructure:"LOGGER_OUTPUT_FILE"`
 	TikiDBConfig                     DBConfig               `mapstructure:"DB_CONFIG"`
 	TikiSTSConfig                    STSConfig              `mapstructure:"STS_CONFIG"`
-	TikiInMemoryStoreConfig          InMemoryStoreConfig    `mapstructure:"IN_MEMORY_STORE_CONFIG"`
 	TikiOpenSearchConfig             OpenSearchConfig       `mapstructure:"OPEN_SEARCH_CONFIG"`
 	TikiAuthenticationProviderConfig AuthenticationProvider `mapstructure:"AUTHENTICATION_PROVIDER"`
 	LogLevel                         string                 `mapstructure:"LOG_LEVEL"`
 	Deployment                       string                 `mapstructure:"TIKI_DEPLOYMENT"`
+	DeveloperEmail                   string                 `mapstructure:"DEVELOPER_EMAIL"`
+	IMONetPort                       int                    `mapstructure:"IMO_NET_PORT"`
+	// TikiInMemoryStoreConfig          InMemoryStoreConfig    `mapstructure:"IN_MEMORY_STORE_CONFIG"`
 }
 
 type DBConfig struct {
@@ -61,11 +65,11 @@ type STSConfig struct {
 	STSRegion        string `mapstructure:"STS_REGION"`
 }
 
-type InMemoryStoreConfig struct {
-	StoreType     string `mapstructure:"STORE_TYPE"`
-	ClusterName   string `mapstructure:"CLUSTER_NAME"`
-	HazelcastAddr string `mapstructure:"HAZELCAST_ADDR"`
-}
+// type InMemoryStoreConfig struct {
+// 	StoreType     string `mapstructure:"STORE_TYPE"`
+// 	ClusterName   string `mapstructure:"CLUSTER_NAME"`
+// 	HazelcastAddr string `mapstructure:"HAZELCAST_ADDR"`
+// }
 
 type OpenSearchConfig struct {
 	Username string `mapstructure:"USERNAME"`
@@ -96,7 +100,7 @@ func GetAppConfig() *AppConfig {
 		fmt.Printf("Failed to read config file: %s\n", err)
 		fmt.Printf("Please specify the config file in the working directory\n")
 		fmt.Printf("or define environment variable to specify it\n")
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	for k, v := range defaultConfig {
@@ -105,24 +109,24 @@ func GetAppConfig() *AppConfig {
 
 	if viper.GetString("DB_CONFIG.DB_TYPE") == "" {
 		fmt.Printf("DB_CONFIG.DB_TYPE is required but has not been set\n")
-		os.Exit(0)
+		os.Exit(2)
 	}
 
 	if err := viper.Unmarshal(&Appconf); err != nil {
 		fmt.Printf("Failed to process config file: %s\n", err)
 
 		fmt.Println(Appconf)
-		os.Exit(-1)
+		os.Exit(3)
 	}
 
 	if viper.Get("DB_CONFIG") == nil {
 		fmt.Printf("DB_CONFIG is required but has not been set\n")
-		os.Exit(0)
+		os.Exit(4)
 	}
 
 	if viper.Get("STS_CONFIG") == nil {
 		fmt.Printf("STS_CONFIG is required but has not been set\n")
-		os.Exit(0)
+		os.Exit(5)
 	}
 
 	return Appconf

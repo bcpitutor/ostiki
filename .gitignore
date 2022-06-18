@@ -37,4 +37,5 @@ tikiserver_darwin_arm64
 tikiserver_darwin_amd64
 tikiserver_linux_amd64
 BUILD
+WORKSPACE
 testconfig

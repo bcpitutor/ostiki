@@ -6,8 +6,7 @@ import (
 )
 
 type GroupRepository struct {
-	DBLayer    models.DBLayer
-	CacheLayer models.CacheLayer
+	DBLayer models.DBLayer
 }
 
 type GroupRepositoryResult struct {
@@ -15,11 +14,10 @@ type GroupRepositoryResult struct {
 	GroupRepository *GroupRepository
 }
 
-func ProvideGroupRepository(db models.DBLayer, cl models.CacheLayer) GroupRepositoryResult {
+func ProvideGroupRepository(db models.DBLayer) GroupRepositoryResult {
 	return GroupRepositoryResult{
 		GroupRepository: &GroupRepository{
-			DBLayer:    db,
-			CacheLayer: cl,
+			DBLayer: db,
 		},
 	}
 }
