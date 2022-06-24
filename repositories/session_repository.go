@@ -26,6 +26,10 @@ func (sr *SessionRepository) CreateSession(session *models.Session) error {
 	return sr.DBLayer.CreateSession(session)
 }
 
+func (sr *SessionRepository) DeleteSession(sessionID string, epoch int64) error {
+	return sr.DBLayer.DeleteSession(sessionID, epoch)
+}
+
 func (sr *SessionRepository) UpdateSession(prevToken string, currentToken string, currentTokenExpires int64, refreshToken string) bool {
 	return sr.DBLayer.UpdateSession(prevToken, currentToken, currentTokenExpires, refreshToken)
 }

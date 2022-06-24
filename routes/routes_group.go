@@ -11,15 +11,28 @@ import (
 
 func ListGroups(c *gin.Context, vars middleware.GinHandlerVars) {
 	groupRepository := vars.GroupRepository
+	imoRepository := vars.ImoRepository
+	sugar := vars.Logger.Sugar()
 
-	groups, err := groupRepository.GetAllGroups()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": fmt.Sprintf("%v", err),
-		})
-		c.Abort()
-		return
+	var groups []models.TicketGroup
+
+	groupsFromImo := imoRepository.GetGroups()
+	if len(groupsFromImo) != 0 {
+		sugar.Infof("Got groups in imo: %+v", groupsFromImo)
+		groups = groupsFromImo
+	} else {
+		sugar.Infof("Groups are not in imo, reading from DB")
+		groupsFromDB, err := groupRepository.GetAllGroups()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": fmt.Sprintf("%v", err),
+			})
+			c.Abort()
+			return
+		}
+		groups = groupsFromDB
+		imoRepository.SetGroups(groups)
 	}
 
 	newToken, _ := c.Get("newToken")

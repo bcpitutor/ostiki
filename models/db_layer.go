@@ -19,6 +19,7 @@ type DBLayer interface {
 		currentTokenExpires int64,
 		refreshToken string,
 	) bool
+	DeleteSession(sessionID string, epoch int64) error
 	GetSessionByRefreshToken(refreshToken string) (Session, error)
 	GetSessions(scanType string) ([]Session, error)
 

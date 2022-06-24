@@ -39,3 +39,5 @@ tikiserver_linux_amd64
 BUILD
 WORKSPACE
 testconfig
+gcompile
+kbnts

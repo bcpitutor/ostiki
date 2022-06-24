@@ -16,6 +16,7 @@ type Session struct {
 		Hd            string `json:"hd"`
 	}
 	Epoch           int64  `json:"epoch"`
+	SessionExpEpoch int64  `json:"sessionExpEpoch"`
 	PreviousIdToken string `json:"prevIdToken"`
 	Details         string `json:"details"`
 	Rtimes          int    `json:"rTimes,default:1"`
@@ -23,10 +24,12 @@ type Session struct {
 }
 
 type SessionExpose struct {
-	SessionId      string `json:"sessionId"`
-	SessionOwner   string `json:"sessionOwner"`   //  email
-	SessionDetails string `json:"sessionDetails"` // comment
-	ExpiresAt      string `json:"expiresAt"`
-	RefreshCount   int    `json:"refreshCount"`
-	Revoked        bool   `json:"revoked"`
+	SessionId       string `json:"sessionId"`
+	SessionOwner    string `json:"sessionOwner"`   //  email
+	SessionDetails  string `json:"sessionDetails"` // comment
+	ExpiresAt       string `json:"expiresAt"`
+	Epoch           int64  `json:"epoch"`
+	SessionExpEpoch int64  `json:"sessionExpEpoch"`
+	RefreshCount    int    `json:"refreshCount"`
+	Revoked         bool   `json:"revoked"`
 }

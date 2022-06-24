@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func addMiscHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
+func addOpenMiscHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
 	ginEngine.GET("/",
 		routes.Welcome,
 	)
@@ -14,6 +14,12 @@ func addMiscHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
 	ginEngine.GET("/version",
 		func(ctx *gin.Context) {
 			routes.VersionInfomation(ctx, vars)
+		},
+	)
+
+	ginEngine.GET("/peer-info",
+		func(ctx *gin.Context) {
+			routes.PeerInfo(ctx, vars)
 		},
 	)
 
@@ -29,15 +35,12 @@ func addMiscHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
 		},
 	)
 
+}
+
+func addMiscHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
 	ginEngine.POST("/checkToken",
 		func(ctx *gin.Context) {
 			routes.CheckToken(ctx, vars)
-		},
-	)
-
-	ginEngine.GET("/session/list",
-		func(ctx *gin.Context) {
-			routes.ListSessions(ctx, vars)
 		},
 	)
 

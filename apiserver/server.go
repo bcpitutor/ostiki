@@ -3,10 +3,10 @@ package apiserver
 import (
 	"fmt"
 	"html/template"
+	"os"
 	"time"
 
 	"github.com/bcpitutor/ostiki/appconfig"
-	"github.com/bcpitutor/ostiki/imo"
 	"github.com/bcpitutor/ostiki/logger"
 	"github.com/bcpitutor/ostiki/middleware"
 	"github.com/bcpitutor/ostiki/models"
@@ -30,8 +30,7 @@ type ServerParams struct {
 	GroupRepository      *repositories.GroupRepository
 	TicketRepository     *repositories.TicketRepository
 	DBLayer              models.DBLayer
-	IMOSender            *imo.IMOSender
-	IMOListener          *imo.IMOListener
+	IMORepository        *repositories.IMORepository
 }
 type Server struct {
 	appConfig            *appconfig.AppConfig
@@ -44,8 +43,7 @@ type Server struct {
 	groupRepository      repositories.GroupRepository
 	ticketRepository     repositories.TicketRepository
 	dbLayer              models.DBLayer
-	imoSender            imo.IMOSender
-	imoListener          imo.IMOListener
+	imoRepository        repositories.IMORepository
 }
 
 func ProvideServer(params ServerParams) *Server {
@@ -60,9 +58,7 @@ func ProvideServer(params ServerParams) *Server {
 		groupRepository:      *params.GroupRepository,
 		ticketRepository:     *params.TicketRepository,
 		dbLayer:              params.DBLayer,
-		imoSender:            *params.IMOSender,
-		imoListener:          *params.IMOListener,
-	}
+		imoRepository:        *params.IMORepository}
 }
 
 func (s *Server) Run() {
@@ -79,8 +75,28 @@ func (s *Server) Run() {
 		gin.SetMode("release")
 	}
 
-	go s.imoListener.Listen()
-	go s.imoSender.JoinCluster()
+	if config.PeerCommunication.DiscoveryMethod != "" {
+		sugar.Infof("Using kube-api for peer discovery")
+		sugar.Infof("Starting peer listener thread")
+		go s.imoRepository.ListenClusterMessages()
+		done := make(chan bool)
+		sugar.Infof("Waiting for peer listener thread to finish")
+		go s.imoRepository.DiscoverPeers(done)
+		<-done
+		sugar.Infof("Peer listener thread finished")
+
+		peers := s.imoRepository.GetPeerIPAddresses()
+		sugar.Infof("Found %d peers", len(peers))
+
+		//go s.imoRepository.Pinger()
+		sessionFromDB, err := s.sessionRepository.GetSessions("")
+		if err != nil {
+			sugar.Errorf("Error getting sessions from db: %v", err)
+			os.Exit(100)
+		}
+		s.imoRepository.SetSessions(sessionFromDB)
+		sugar.Infof("Loaded %d sessions from DB into IMO", len(sessionFromDB))
+	}
 
 	ginEngine := gin.Default()
 	html := template.Must(template.ParseFiles("html/pages/index.html"))
@@ -100,17 +116,27 @@ func (s *Server) Run() {
 		}),
 	)
 
+	addOpenMiscHandlers(ginEngine,
+		middleware.GinHandlerVars{
+			Logger:            logger,
+			AppConfig:         config,
+			ImoRepository:     &s.imoRepository,
+			SessionRepository: &s.sessionRepository,
+		},
+	)
+
 	ginEngine.Use(func(ctx *gin.Context) {
 		middleware.Auth(ctx, middleware.GinHandlerVars{
 			Logger:               logger,
 			AppConfig:            config,
+			AWSService:           s.awsServices,
 			BanRepository:        &s.banRepository,
 			DomainRepository:     &s.domainRepository,
 			GroupRepository:      &s.groupRepository,
 			TicketRepository:     &s.ticketRepository,
 			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
-			AWSService:           s.awsServices,
+			ImoRepository:        &s.imoRepository,
 		})
 	})
 
@@ -124,6 +150,7 @@ func (s *Server) Run() {
 			TicketRepository:     &s.ticketRepository,
 			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
+			ImoRepository:        &s.imoRepository,
 			AWSService:           s.awsServices,
 		},
 	)
@@ -138,6 +165,7 @@ func (s *Server) Run() {
 			TicketRepository:     &s.ticketRepository,
 			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
+			ImoRepository:        &s.imoRepository,
 			AWSService:           s.awsServices,
 		},
 	)
@@ -152,6 +180,7 @@ func (s *Server) Run() {
 			TicketRepository:     &s.ticketRepository,
 			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
+			ImoRepository:        &s.imoRepository,
 			AWSService:           s.awsServices,
 		},
 	)
@@ -166,7 +195,18 @@ func (s *Server) Run() {
 			TicketRepository:     &s.ticketRepository,
 			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
+			ImoRepository:        &s.imoRepository,
 			AWSService:           s.awsServices,
+		},
+	)
+
+	addSessionHandlers(ginEngine,
+		middleware.GinHandlerVars{
+			Logger:            logger,
+			AppConfig:         config,
+			GroupRepository:   &s.groupRepository,
+			SessionRepository: &s.sessionRepository,
+			ImoRepository:     &s.imoRepository,
 		},
 	)
 
@@ -181,6 +221,7 @@ func (s *Server) Run() {
 			SessionRepository:    &s.sessionRepository,
 			PermissionRepository: &s.permissionRepository,
 			AWSService:           s.awsServices,
+			ImoRepository:        &s.imoRepository,
 		},
 	)
 

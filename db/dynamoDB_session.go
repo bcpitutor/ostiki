@@ -68,6 +68,27 @@ func (db DynamoDBDriver) GetSessionByRefreshToken(rtoken string) (models.Session
 	return sess, nil
 }
 
+func (db DynamoDBDriver) DeleteSession(sessionID string, epoch int64) error {
+	tableName := db.TableNames["session_table"]
+	dynamoDB := db.Client
+
+	// instead of Updating item to revoke, we delete the item
+	_, err := dynamoDB.DeleteItem(
+		context.TODO(),
+		&dynamodb.DeleteItemInput{
+			TableName: aws.String(tableName),
+			Key: map[string]types.AttributeValue{
+				"SessID": &types.AttributeValueMemberS{Value: sessionID},
+				"Epoch":  &types.AttributeValueMemberN{Value: strconv.FormatInt(epoch, 10)},
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 func (db DynamoDBDriver) UpdateSession(prevToken string, currentToken string, currentTokenExpires int64, refreshToken string) bool {
 	session, err := db.GetSessionByRefreshToken(refreshToken)
 	if err != nil {

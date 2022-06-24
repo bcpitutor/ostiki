@@ -45,6 +45,7 @@ type GinHandlerVars struct {
 	DomainRepository     *repositories.DomainRepository
 	GroupRepository      *repositories.GroupRepository
 	TicketRepository     *repositories.TicketRepository
+	ImoRepository        *repositories.IMORepository
 	AppConfig            *appconfig.AppConfig
 }
 
