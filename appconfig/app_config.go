@@ -10,8 +10,9 @@ import (
 var (
 	configFileName    = "tikiserver"
 	defaultConfigPath = []string{"./testconfig", ".", "./config"}
-	defaultConfig     = map[string]interface{}{
+	defaultConfig     = map[string]any{
 		"IMO_NET_PORT":                                 8671,
+		"IMO_INITIAL_WAIT_PERIOD":                      25,
 		"TIKI_DEPLOYMENT":                              "local",
 		"DEVELOPER_EMAIL":                              "",
 		"LISTENER_PORT":                                9090,
@@ -57,6 +58,7 @@ type AppConfig struct {
 	Deployment                       string                  `mapstructure:"TIKI_DEPLOYMENT"`
 	DeveloperEmail                   string                  `mapstructure:"DEVELOPER_EMAIL"`
 	IMONetPort                       int                     `mapstructure:"IMO_NET_PORT"`
+	IMOInitialWaitPeriod             int                     `mapstructure:"IMO_INITIAL_WAIT_PERIOD"`
 	SessionMaxLength                 int64                   `mapstructure:"SESSION_MAX_LENGTH"`
 	SessionMaxSimultaneousUsers      int                     `mapstructure:"SESSION_MAX_SIMULTANEOUS_USERS"`
 	SessionKeepExpiredSessionsFor    int                     `mapstructure:"SESSION_KEEP_EXPIRED_SESSIONS_FOR"`
@@ -69,6 +71,7 @@ type PeerCommunicationConfig struct {
 	Namespace       string   `mapstructure:"NAMESPACE"`
 	Peers           []string `mapstructure:"PEERS"`
 }
+
 type DBConfig struct {
 	DbType          string `mapstructure:"DB_TYPE"`
 	DbProfileId     string `mapstructure:"DB_PROFILE_ID"`

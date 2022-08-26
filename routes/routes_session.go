@@ -10,16 +10,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ListSessions(c *gin.Context, vars middleware.GinHandlerVars) {
+func ListSessions(c *gin.Context, vars middleware.GinHandlerVars, isCacheReady *bool) {
 	sessionRepository := vars.SessionRepository
 	groupRepository := vars.GroupRepository
-	imoRepository := vars.ImoRepository
+	//imoRepository := vars.ImoRepository
 	sugar := vars.Logger.Sugar()
 
-	var sessions []models.Session
-
 	userEmail := c.Request.Header.Get("email")
+	//sugar.Infof("User email: %s", userEmail)
 	if !groupRepository.IsUserInTikiadmins(userEmail) {
+		sugar.Infof("User is not in Tikiadmins group, aborting")
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 			"status":  "error",
 			"message": fmt.Sprintf("User %s is not authorized to access banned users", userEmail),
@@ -29,29 +29,27 @@ func ListSessions(c *gin.Context, vars middleware.GinHandlerVars) {
 		return
 	}
 
-	sessionsFromImo := imoRepository.GetSessions()
-	if len(sessionsFromImo) != 0 {
-		sugar.Infof("Got sessions in imo: %+v", sessionsFromImo)
-		sessions = sessionsFromImo
-	} else {
-		sugar.Infof("Session are not in imo, reading from DB")
-		sessType, ok := c.GetQuery("sessionType")
-		if !ok {
-			sessType = "all"
-		}
-
-		sessionsFromDB, err := sessionRepository.GetSessions(sessType)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"status":  "error",
-				"message": err,
-				"data":    "",
-				"count":   "",
-			})
-		}
-		sessions = sessionsFromDB
-		imoRepository.SetSessions(sessions)
+	sessType, ok := c.GetQuery("sessionType")
+	if !ok {
+		sugar.Infof("No session type specified, reading all sessions")
+		sessType = "all"
 	}
+
+	//sugar.Info("We are in ListSessions with isCacheReady: ", *isCacheReady)
+	var sessions []models.Session
+
+	sessionsFromDB, err := sessionRepository.GetSessions(sessType)
+	if err != nil {
+		sugar.Errorf("Error getting sessions from sessionRepository: %+v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err,
+			"data":    "",
+			"count":   "",
+		})
+	}
+	sessions = sessionsFromDB
+
 	var sessExposes []models.SessionExpose
 
 	for _, v := range sessions {
@@ -70,12 +68,18 @@ func ListSessions(c *gin.Context, vars middleware.GinHandlerVars) {
 	}
 
 	newToken, _ := c.Get("newToken")
-	c.JSON(http.StatusOK, gin.H{
+	//sugar.Infof("Returning sessions: %+v", sessExposes)
+
+	respond := gin.H{
 		"status":   "success",
 		"message":  "",
 		"data":     sessExposes,
 		"myIP":     utils.GetOutboundIP(),
 		"count":    len(sessExposes),
 		"newToken": newToken,
-	})
+	}
+
+	//sugar.Infof("Returning sessions: %+v", respond)
+
+	c.JSON(http.StatusOK, respond)
 }

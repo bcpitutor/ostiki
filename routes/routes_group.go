@@ -11,35 +11,27 @@ import (
 
 func ListGroups(c *gin.Context, vars middleware.GinHandlerVars) {
 	groupRepository := vars.GroupRepository
-	imoRepository := vars.ImoRepository
-	sugar := vars.Logger.Sugar()
+	//imoRepository := vars.ImoRepository
+	//sugar := vars.Logger.Sugar()
 
-	var groups []models.TicketGroup
+	//var groups []models.TicketGroup
 
-	groupsFromImo := imoRepository.GetGroups()
-	if len(groupsFromImo) != 0 {
-		sugar.Infof("Got groups in imo: %+v", groupsFromImo)
-		groups = groupsFromImo
-	} else {
-		sugar.Infof("Groups are not in imo, reading from DB")
-		groupsFromDB, err := groupRepository.GetAllGroups()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":  "error",
-				"message": fmt.Sprintf("%v", err),
-			})
-			c.Abort()
-			return
-		}
-		groups = groupsFromDB
-		imoRepository.SetGroups(groups)
+	groupsFromDB, err := groupRepository.GetAllGroups()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": fmt.Sprintf("%v", err),
+		})
+		c.Abort()
+		return
 	}
+	//groups = groupsFromDB
 
 	newToken, _ := c.Get("newToken")
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "success",
-		"count":    len(groups),
-		"data":     groups,
+		"count":    len(groupsFromDB),
+		"data":     groupsFromDB,
 		"newToken": newToken,
 	})
 }

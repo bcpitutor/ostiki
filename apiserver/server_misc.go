@@ -17,11 +17,23 @@ func addOpenMiscHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) 
 		},
 	)
 
-	ginEngine.GET("/peer-info",
-		func(ctx *gin.Context) {
-			routes.PeerInfo(ctx, vars)
-		},
-	)
+	// ginEngine.GET("/peer-info",
+	// 	func(ctx *gin.Context) {
+	// 		routes.PeerInfo(ctx, vars)
+	// 	},
+	// )
+
+	// ginEngine.GET("/hz-info",
+	// 	func(ctx *gin.Context) {
+	// 		routes.HZInfo(ctx, vars)
+	// 	},
+	// )
+
+	// ginEngine.GET("/hz-dump",
+	// 	func(ctx *gin.Context) {
+	// 		routes.HZDump(ctx, vars)
+	// 	},
+	// )
 
 	ginEngine.GET("/auth/:id/:port",
 		func(ctx *gin.Context) {
@@ -44,9 +56,9 @@ func addMiscHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
 		},
 	)
 
-	ginEngine.Use(
+	ginEngine.POST("/renewToken",
 		func(ctx *gin.Context) {
-			middleware.Auth(ctx, vars)
+			routes.RenewToken(ctx, vars)
 		},
 	)
 }

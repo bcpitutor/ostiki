@@ -9,14 +9,14 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/spf13/viper"
+	"github.com/bcpitutor/ostiki/appconfig"
 	"go.uber.org/zap"
 )
 
-func GetNewGoogleToken(logger *zap.Logger, rToken string) (map[string]any, error) {
+func GetNewGoogleToken(config *appconfig.AppConfig, sugar *zap.SugaredLogger, rToken string) (map[string]any, error) {
 	var result map[string]any
 
-	logger.Debug("new token request is starting.")
+	sugar.Debug("new token request is starting.")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -28,29 +28,32 @@ func GetNewGoogleToken(logger *zap.Logger, rToken string) (map[string]any, error
 	URL, err := url.Parse(destUrl)
 
 	params := url.Values{}
-	params.Add("client_id", viper.GetString("GOOGLE_CLIENT_ID"))
-	params.Add("client_secret", viper.GetString("GOOGLE_CLIENT_SECRET"))
+	//params.Add("client_id", viper.GetString("GOOGLE_CLIENT_ID"))
+	params.Add("client_id", config.TikiAuthenticationProviderConfig.ClientId)
+	//params.Add("client_secret", viper.GetString("GOOGLE_CLIENT_SECRET"))
+	params.Add("client_secret", config.TikiAuthenticationProviderConfig.ClientSecret)
 	params.Add("refresh_token", rToken)
 	params.Add("grant_type", "refresh_token")
 
 	URL.RawQuery = params.Encode()
 	url := URL.String()
 
+	//sugar.Debugf("URL: %s", url)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
-		logger.Debug(fmt.Sprintf("new request error: %v", err))
+		sugar.Debug(fmt.Sprintf("new request error: %v", err))
 		return result, fmt.Errorf("google token create request error: %s", err)
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
-		logger.Debug(fmt.Sprintf("Google request error: %v", err))
+		sugar.Debug(fmt.Sprintf("Google request error: %v", err))
 		return result, fmt.Errorf("google token request error: %s", err)
 	}
 
 	defer res.Body.Close()
 
-	logger.Sugar().Debugf("Raw Google response: %+v", res)
+	//sugar.Debugf("Raw Google response: %+v", res)
 
 	rBody, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -59,16 +62,27 @@ func GetNewGoogleToken(logger *zap.Logger, rToken string) (map[string]any, error
 
 	var tData map[string]any
 	if err := json.Unmarshal(rBody, &tData); err != nil {
+		sugar.Debugf("google token unmarshal error: %v", err)
 		return result, fmt.Errorf("google token unmarshall error: %s", err)
 	}
 
-	logger.Sugar().Debugf("Google response: %+v", res)
+	//sugar.Debugf("Google response: %+v", res)
+	//sugar.Debugf("TData: %+v", tData)
 
-	if tData["id_token"] != nil {
-		if tData["id_token"] != "" {
-			return tData, nil
-		}
+	if tData["error"] != nil {
+		sugar.Debugf("Google token error: %+v", tData["error"])
+		return result, fmt.Errorf("%s", tData["error_description"])
 	}
+	//sugar.Debugf("No error, Google token response: %+v", tData)
 
-	return result, fmt.Errorf("token is not found.")
+	return tData, nil
+	// if tData["id_token"] != nil {
+	// 	sugar.Debugf("1 Google response: %+v", tData["id_token"])
+	// 	if tData["id_token"] != "" {
+	// 		sugar.Debugf("2 Google response: %+v", tData["id_token"])
+	// 		return tData, nil
+	// 	}
+	// }
+
+	// return result, fmt.Errorf("token is not found.")
 }

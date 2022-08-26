@@ -22,6 +22,8 @@ type DBLayer interface {
 	DeleteSession(sessionID string, epoch int64) error
 	GetSessionByRefreshToken(refreshToken string) (Session, error)
 	GetSessions(scanType string) ([]Session, error)
+	GetSessionByToken(token string) (Session, error)
+	GetSessionsByEmail(email string) ([]Session, error)
 
 	// Group Table
 	GetAllGroups() ([]TicketGroup, error)

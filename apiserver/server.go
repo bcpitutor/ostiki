@@ -20,29 +20,33 @@ import (
 type ServerParams struct {
 	dig.In
 
-	AppConfig            *appconfig.AppConfig
-	TikiLogger           *logger.TikiLogger
-	AWSService           *services.AWSService
+	AppConfig  *appconfig.AppConfig
+	TikiLogger *logger.TikiLogger
+	AWSService *services.AWSService
+	DBLayer    models.DBLayer
+	//isCacheReady *bool
+
 	PermissionRepository *repositories.PermissionRepository
 	SessionRepository    *repositories.SessionRepository
 	DomainRepository     *repositories.DomainRepository
 	BanRepository        *repositories.BanRepository
 	GroupRepository      *repositories.GroupRepository
 	TicketRepository     *repositories.TicketRepository
-	DBLayer              models.DBLayer
 	IMORepository        *repositories.IMORepository
 }
 type Server struct {
-	appConfig            *appconfig.AppConfig
-	tikiLogger           *logger.TikiLogger
-	awsServices          *services.AWSService
+	appConfig   *appconfig.AppConfig
+	tikiLogger  *logger.TikiLogger
+	awsServices *services.AWSService
+	dbLayer     models.DBLayer
+	//isCacheReady *bool
+
 	permissionRepository repositories.PermissionRepository
 	sessionRepository    repositories.SessionRepository
 	banRepository        repositories.BanRepository
 	domainRepository     repositories.DomainRepository
 	groupRepository      repositories.GroupRepository
 	ticketRepository     repositories.TicketRepository
-	dbLayer              models.DBLayer
 	imoRepository        repositories.IMORepository
 }
 
@@ -51,17 +55,19 @@ func ProvideServer(params ServerParams) *Server {
 		appConfig:            params.AppConfig,
 		tikiLogger:           params.TikiLogger,
 		awsServices:          params.AWSService,
+		dbLayer:              params.DBLayer,
 		permissionRepository: *params.PermissionRepository,
 		sessionRepository:    *params.SessionRepository,
 		banRepository:        *params.BanRepository,
 		domainRepository:     *params.DomainRepository,
 		groupRepository:      *params.GroupRepository,
 		ticketRepository:     *params.TicketRepository,
-		dbLayer:              params.DBLayer,
-		imoRepository:        *params.IMORepository}
+		imoRepository:        *params.IMORepository,
+		//isCacheReady:         params.isCacheReady,
+	}
 }
 
-func (s *Server) Run() {
+func (s *Server) Run(isCacheReady *bool) {
 	config := s.appConfig
 	logger := s.tikiLogger.Logger
 	sugar := logger.Sugar()
@@ -75,31 +81,10 @@ func (s *Server) Run() {
 		gin.SetMode("release")
 	}
 
-	if config.PeerCommunication.DiscoveryMethod != "" {
-		sugar.Infof("Using kube-api for peer discovery")
-		sugar.Infof("Starting peer listener thread")
-		go s.imoRepository.ListenClusterMessages()
-		done := make(chan bool)
-		sugar.Infof("Waiting for peer listener thread to finish")
-		go s.imoRepository.DiscoverPeers(done)
-		<-done
-		sugar.Infof("Peer listener thread finished")
-
-		peers := s.imoRepository.GetPeerIPAddresses()
-		sugar.Infof("Found %d peers", len(peers))
-
-		//go s.imoRepository.Pinger()
-		sessionFromDB, err := s.sessionRepository.GetSessions("")
-		if err != nil {
-			sugar.Errorf("Error getting sessions from db: %v", err)
-			os.Exit(100)
-		}
-		s.imoRepository.SetSessions(sessionFromDB)
-		sugar.Infof("Loaded %d sessions from DB into IMO", len(sessionFromDB))
-	}
-
 	ginEngine := gin.Default()
-	html := template.Must(template.ParseFiles("html/pages/index.html"))
+	html := template.Must(
+		template.ParseFiles("html/pages/index.html"),
+	)
 	ginEngine.SetHTMLTemplate(html)
 
 	ginEngine.Static("/static", "./static")
@@ -208,6 +193,7 @@ func (s *Server) Run() {
 			SessionRepository: &s.sessionRepository,
 			ImoRepository:     &s.imoRepository,
 		},
+		isCacheReady,
 	)
 
 	addBanHandlers(ginEngine,
@@ -238,6 +224,18 @@ func (s *Server) Run() {
 	// 	fmt.Printf("%s\n", err)
 	// }
 	// fmt.Printf("Message sent to channel %s at %s", channelID, timestamp)
+
+	sessionFromDB, err := s.sessionRepository.GetSessions("all")
+	if err != nil {
+		sugar.Errorf("Error getting sessions from db: %v", err)
+		os.Exit(100)
+	}
+	sugar.Infof("Loaded %d sessions", len(sessionFromDB))
+
+	// sugar.Infof("Filling the cache with initial sessions from DB")
+	// s.imoRepository.FillSessionsIntoCache("all", sessionFromDB)
+	// sugar.Infof("Filling the cache is ok")
+
 	msg := fmt.Sprintf("Server started in deployment: %s", config.Deployment)
 	if config.Deployment == "local" {
 		msg = fmt.Sprintf("%s, Developer Email: %s", msg, config.DeveloperEmail)

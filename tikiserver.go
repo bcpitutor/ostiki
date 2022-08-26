@@ -15,6 +15,12 @@ import (
 	"go.uber.org/dig"
 )
 
+var cache bool = false
+
+func IsCacheReady() *bool {
+	return &cache
+}
+
 func main() {
 	config := appconfig.GetAppConfig()
 
@@ -34,21 +40,22 @@ func main() {
 	container.Provide(appconfig.GetAppConfig)
 	container.Provide(logger.GetTikiLogger)
 	container.Provide(services.GetAWS)
+	container.Provide(IsCacheReady)
 
+	container.Provide(repositories.ProvideIMORepository)
 	container.Provide(repositories.ProvideSessionRepository)
 	container.Provide(repositories.ProvideBanRepository)
 	container.Provide(repositories.ProvideDomainRepository)
 	container.Provide(repositories.ProvideGroupRepository)
 	container.Provide(repositories.ProvideTicketRepository)
 	container.Provide(repositories.ProvidePermissionRepository)
-	container.Provide(repositories.ProvideIMORepository)
 
 	container.Provide(apiserver.ProvideServer)
 
 	// initiate server
 	err := container.Invoke(
 		func(server *apiserver.Server) {
-			server.Run()
+			server.Run(IsCacheReady())
 		},
 	)
 	if err != nil {

@@ -15,7 +15,7 @@ func GetTikiLogger(cfg *appconfig.AppConfig) *TikiLogger {
 
 	conf := zap.Config{
 		Encoding: "json",
-		Level:    zap.NewAtomicLevelAt(zapcore.InfoLevel),
+		Level:    zap.NewAtomicLevelAt(zapcore.DebugLevel),
 		OutputPaths: []string{
 			outputFile,
 			"stdout",

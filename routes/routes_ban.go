@@ -49,11 +49,13 @@ func ListBannedUsers(c *gin.Context, vars middleware.GinHandlerVars) {
 }
 
 func BanUser(c *gin.Context, vars middleware.GinHandlerVars) {
+	sugar := vars.Logger.Sugar()
 	banRepository := vars.BanRepository
 	groupRepository := vars.GroupRepository
 
 	adminEmail := c.Request.Header.Get("email")
 	if !groupRepository.IsUserInTikiadmins(adminEmail) {
+		sugar.Infof("oops")
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 			"status":  "error",
 			"message": fmt.Sprintf("User %s is not authorized to access banned users", adminEmail),
@@ -63,42 +65,37 @@ func BanUser(c *gin.Context, vars middleware.GinHandlerVars) {
 		return
 	}
 
-	userEmail, ok := c.GetQuery("userEmail")
-	if !ok {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"message": "please check your query parameters",
-		})
-		return
-	}
+	var emailData map[string]string
+	err := c.ShouldBindJSON(&emailData)
 
 	bannedUser := models.BannedUser{
-		UserEmail: userEmail,
+		UserEmail: emailData["userEmail"],
 		CreatedAt: strconv.FormatInt(time.Now().Unix(), 10),
 		CreatedBy: adminEmail,
 		UpdatedAt: strconv.FormatInt(time.Now().Unix(), 10),
 		UpdatedBy: adminEmail,
 	}
 
-	err := banRepository.AddBannedUser(bannedUser)
+	err = banRepository.AddBannedUser(bannedUser)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+		sugar.Infof("Err: %+v", err)
+		c.AbortWithStatusJSON(http.StatusOK, gin.H{
 			"status":  "error",
-			"message": err,
+			"message": err.Error(),
 		})
 		return
 	}
 
 	newToken, _ := c.Get("newToken")
-
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "success",
-		"message":  fmt.Sprintf("The user, [%s] is banned.", userEmail),
+		"message":  fmt.Sprintf("The user, [%s] is banned.", emailData["userEmail"]),
 		"newToken": newToken,
 	})
 }
 
 func UnbanUser(c *gin.Context, vars middleware.GinHandlerVars) {
+	sugar := vars.Logger.Sugar()
 	banRepository := vars.BanRepository
 	groupRepository := vars.GroupRepository
 
@@ -113,20 +110,24 @@ func UnbanUser(c *gin.Context, vars middleware.GinHandlerVars) {
 		return
 	}
 
-	userEmail, ok := c.GetQuery("userEmail")
-	if !ok {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"message": "please check your query parameters",
-		})
-		return
-	}
+	//userEmail, ok := c.GetQuery("userEmail")
+	var emailData map[string]string
+	err := c.ShouldBindJSON(&emailData)
 
-	err := banRepository.UnbanUser(userEmail)
+	// if !ok {
+	// 	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+	// 		"status":  "error",
+	// 		"message": "please check your query parameters",
+	// 	})
+	// 	return
+	// }
+
+	err = banRepository.UnbanUser(emailData["userEmail"])
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+		sugar.Infof("Err: %+v", err)
+		c.AbortWithStatusJSON(http.StatusOK, gin.H{
 			"status":  "error",
-			"message": err,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -135,7 +136,7 @@ func UnbanUser(c *gin.Context, vars middleware.GinHandlerVars) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "success",
-		"message":  fmt.Sprintf("The user, [%s] is unbanned.", userEmail),
+		"message":  fmt.Sprintf("The user, [%s] is unbanned.", emailData["userEmail"]),
 		"newToken": newToken,
 	})
 }

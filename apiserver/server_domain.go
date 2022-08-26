@@ -19,7 +19,7 @@ func addDomainHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
 		routes.GetDomain(ctx, vars)
 	})
 
-	ginEngine.DELETE("/domain/delete/:domainPath", func(ctx *gin.Context) {
+	ginEngine.DELETE("/domain/delete", func(ctx *gin.Context) {
 		routes.DeleteDomain(ctx, vars)
 	})
 }

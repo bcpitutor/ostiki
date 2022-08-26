@@ -49,3 +49,16 @@ func CheckToken(c *gin.Context, vars middleware.GinHandlerVars) {
 		})
 	}
 }
+
+func RenewToken(c *gin.Context, vars middleware.GinHandlerVars) {
+	logger := vars.Logger
+	logger.Info("RenewToken")
+
+	newToken, _ := c.Get("newToken")
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":   "success",
+		"newToken": newToken,
+	})
+
+}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/bcpitutor/ostiki/middleware"
 	"github.com/bcpitutor/ostiki/models"
+	"github.com/bcpitutor/ostiki/repositories"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,7 +27,7 @@ func GoogleCBHandler(c *gin.Context, vars middleware.GinHandlerVars) {
 	logger := vars.Logger
 	sessionRepository := vars.SessionRepository
 	imoRepository := vars.ImoRepository
-	config := vars.AppConfig
+	appconfig := vars.AppConfig
 	sugar := logger.Sugar()
 
 	sugar.Debug("in GoogleCBHandler")
@@ -51,7 +52,6 @@ func GoogleCBHandler(c *gin.Context, vars middleware.GinHandlerVars) {
 	sugar.Debugf("State: %s", state)
 
 	tokenResponse, err := GetGoogleAuthConfig().Exchange(context.TODO(), code)
-
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "Request failed try again. Contact your system administrator.",
@@ -66,7 +66,6 @@ func GoogleCBHandler(c *gin.Context, vars middleware.GinHandlerVars) {
 
 	var httpClient = &http.Client{Timeout: 10 * time.Second}
 	resp, err := httpClient.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + url.QueryEscape(tokenResponse.AccessToken))
-
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"message": "request failed try again.",
@@ -74,6 +73,7 @@ func GoogleCBHandler(c *gin.Context, vars middleware.GinHandlerVars) {
 		})
 		return
 	}
+
 	var respBody UserInfoRespBody
 	json.NewDecoder(resp.Body).Decode(&respBody)
 
@@ -81,34 +81,41 @@ func GoogleCBHandler(c *gin.Context, vars middleware.GinHandlerVars) {
 	sugar.Infof("UserInfo : %+v", respBody)
 
 	// get users sessions from imo
-	sessionsByEmail := imoRepository.GetSessionsByEmail(respBody.Email)
-	sugar.Infof("Got %d sessions for user: %s", len(sessionsByEmail), respBody.Email)
+	//sessionsByEmail := imoRepository.GetSessionsByEmail(respBody.Email)
 
-	if len(sessionsByEmail) > config.SessionMaxSimultaneousUsers {
-		// delete users all sessions except the 3 newest ones
-		sugar.Infof("Deleting %d sessions for user: %s", len(sessionsByEmail)-config.SessionMaxSimultaneousUsers, respBody.Email)
-		for _, session := range sessionsByEmail[config.SessionMaxSimultaneousUsers:] {
-			// first delete from the db instead of imo, then if the delete successful delete from imo
-			err := sessionRepository.DeleteSession(session.SessID, session.Epoch)
-			if err != nil {
-				sugar.Errorf("Failed to delete session from DB: %s", session.SessID)
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"message": "Request failed try again. Contact your system administrator. Error: " + err.Error(),
-					"details": fmt.Sprintf("%v", err),
-				})
-				return
-			}
+	// sessionByToken, err := imoRepository.GetSessionByToken(idToken.(string))
+	// if err != nil {
+	// 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+	// 		"message": "request failed try again.",
+	// 		"details": fmt.Sprintf("%v", err),
+	// 	})
+	// 	return
+	// }
 
-			imoRepository.DeleteSession(session.SessID, false)
-		}
-		peerMsg := "upd, session"
-		imoRepository.SendMessageToPeers(peerMsg, imoRepository.PeerIPAddresses)
+	// if len(sessionByToken) > 1 {
+	// 	sugar.Infof("Anomaly detected: multiple sessions found for token: %s", idToken.(string))
+	// }
+
+	sessionsByEmail, err := sessionRepository.GetSessionsByEmail(respBody.Email)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "request failed try again.",
+			"details": fmt.Sprintf("%v", err),
+		})
+		return
 	}
 
-	// detect if sessions expired
-	for _, session := range sessionsByEmail {
-		if session.SessionExpEpoch < time.Now().Unix() {
-			sugar.Debugf("Found expired session for user [%s] ID: [%s]", session.SessionOwner, session.SessID)
+	//sessionsByEmail := imoRepository.GetSessionsByEmail(respBody.Email)
+	sugar.Infof("Got %d sessions for user: %s", len(sessionsByEmail), respBody.Email)
+	if len(sessionsByEmail) > (appconfig.SessionMaxSimultaneousUsers + 100) {
+		// delete users all sessions except the 3 newest ones
+		err := deleteOldSessions(sessionRepository, imoRepository, sessionsByEmail, appconfig.SessionMaxSimultaneousUsers)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "Request failed try again. Contact your system administrator. Error: " + err.Error(),
+				"details": fmt.Sprintf("%v", err),
+			})
+			return
 		}
 	}
 
@@ -142,8 +149,8 @@ func GoogleCBHandler(c *gin.Context, vars middleware.GinHandlerVars) {
 	sessInfo.RefreshToken = tokenResponse.RefreshToken
 	sessInfo.TokenType = tokenResponse.TokenType
 	sessInfo.UserInfo = respBody
-	sessInfo.Epoch = now                                     // time that the session was created
-	sessInfo.SessionExpEpoch = now + config.SessionMaxLength // time that the session will expire
+	sessInfo.Epoch = now                                        // time that the session was created
+	sessInfo.SessionExpEpoch = now + appconfig.SessionMaxLength // time that the session will expire
 
 	err = sessionRepository.CreateSession(&sessInfo)
 	if err != nil {
@@ -155,15 +162,6 @@ func GoogleCBHandler(c *gin.Context, vars middleware.GinHandlerVars) {
 	}
 
 	sugar.Debugf("Session created: %+v", sessInfo)
-	err = imoRepository.AddSession(sessInfo)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "request failed try again.",
-			"details": fmt.Sprintf("%v", err),
-		})
-		return
-	}
-
 	// activeSessions := imoRepository.GetSessions()
 	// imoRepository.SetSessions(append(activeSessions, sessInfo))
 
@@ -179,4 +177,17 @@ func GoogleCBHandler(c *gin.Context, vars middleware.GinHandlerVars) {
 			"port":         stateResp.Port,
 		},
 	)
+}
+
+func deleteOldSessions(sessionRepository *repositories.SessionRepository, imoRepository *repositories.IMORepository, sessionsByEmail []models.Session, maxSimultaneousUsers int) error {
+	//sugar.Infof("Deleting %d sessions for user: %s", len(sessionsByEmail)-appconfig.SessionMaxSimultaneousUsers, respBody.Email)
+	for _, session := range sessionsByEmail[maxSimultaneousUsers:] {
+		// first delete from the db instead of imo, then if the delete successful delete from imo
+		err := sessionRepository.DeleteSession(session.SessID, session.Epoch)
+		if err != nil {
+			//sugar.Errorf("Failed to delete session from DB: %s", session.SessID)
+			return fmt.Errorf("Failed to delete session from DB: %s", session.SessID)
+		}
+	}
+	return nil
 }

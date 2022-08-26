@@ -113,6 +113,70 @@ func (db DynamoDBDriver) UpdateSession(prevToken string, currentToken string, cu
 	return true
 }
 
+func (db DynamoDBDriver) GetSessionByToken(token string) (models.Session, error) {
+	var sess models.Session
+	tableName := db.TableNames["session_table"]
+	dynamoDB := db.Client
+
+	resp, err := dynamoDB.Scan(
+		context.TODO(),
+		&dynamodb.ScanInput{
+			TableName:        &tableName,
+			FilterExpression: aws.String("IdToken = :idToken"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":idToken": &types.AttributeValueMemberS{Value: token},
+			},
+		},
+	)
+	if err != nil {
+		return sess, err
+	}
+
+	if len(resp.Items) == 0 {
+		return sess, fmt.Errorf("the token does not exist.")
+	}
+
+	if err := attributevalue.UnmarshalMap(resp.Items[0], &sess); err != nil {
+		return sess, err
+	}
+
+	return sess, nil
+}
+
+func (db DynamoDBDriver) GetSessionsByEmail(email string) ([]models.Session, error) {
+	var sess []models.Session
+	tableName := db.TableNames["session_table"]
+	dynamoDB := db.Client
+
+	resp, err := dynamoDB.Scan(
+		context.TODO(),
+		&dynamodb.ScanInput{
+			TableName:        &tableName,
+			FilterExpression: aws.String("SessionOwner = :email"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":email": &types.AttributeValueMemberS{Value: email},
+			},
+		},
+	)
+	if err != nil {
+		return sess, err
+	}
+
+	if len(resp.Items) == 0 {
+		return sess, fmt.Errorf("No session associated with this email exists")
+	}
+
+	for _, item := range resp.Items {
+		var s models.Session
+		if err := attributevalue.UnmarshalMap(item, &s); err != nil {
+			return sess, err
+		}
+		sess = append(sess, s)
+	}
+
+	return sess, nil
+}
+
 func (db DynamoDBDriver) GetSessions(scanType string) ([]models.Session, error) {
 	sessions := []models.Session{}
 

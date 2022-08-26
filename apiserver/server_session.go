@@ -6,10 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func addSessionHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars) {
+func addSessionHandlers(ginEngine *gin.Engine, vars middleware.GinHandlerVars, isCacheReady *bool) {
 	ginEngine.GET("/session/list",
 		func(ctx *gin.Context) {
-			routes.ListSessions(ctx, vars)
+			routes.ListSessions(ctx, vars, isCacheReady)
 		},
 	)
 }

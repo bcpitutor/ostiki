@@ -2,31 +2,29 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
-	"net"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/bcpitutor/ostiki/appconfig"
 	"github.com/bcpitutor/ostiki/logger"
 	"github.com/bcpitutor/ostiki/models"
-	"github.com/bcpitutor/ostiki/utils"
+	"github.com/hazelcast/hazelcast-go-client"
+	"github.com/hazelcast/hazelcast-go-client/cluster"
 	"go.uber.org/dig"
 	"go.uber.org/zap"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type IMORepository struct {
-	PeerIPAddresses   []string
-	sugar             *zap.SugaredLogger
-	config            *appconfig.AppConfig
-	sessionRepository *SessionRepository
+	sugar    *zap.SugaredLogger
+	config   *appconfig.AppConfig
+	hzClient *hazelcast.Client
 
-	groups   []models.TicketGroup
-	sessions []models.Session
+	activeSessions  *hazelcast.Map
+	expiredSessions *hazelcast.Map
+	revokedSessions *hazelcast.Map
+	allSessions     *hazelcast.Map
 }
 
 type IMORepositoryResult struct {
@@ -34,326 +32,183 @@ type IMORepositoryResult struct {
 	IMORepository *IMORepository
 }
 
-func ProvideIMORepository(appconfig *appconfig.AppConfig, logger *logger.TikiLogger, sr *SessionRepository) IMORepositoryResult {
-	imor := IMORepository{}
-	imor.sugar = logger.Logger.Sugar()
-	imor.config = appconfig
-	imor.sessionRepository = sr
+// type IMODiscoveryResult struct {
+// 	done bool
+// }
 
-	imor.groups = []models.TicketGroup{}
-	imor.sessions = []models.Session{}
+func ProvideIMORepository(isCacheReady *bool, appconfig *appconfig.AppConfig, logger *logger.TikiLogger) IMORepositoryResult {
+	imo := IMORepository{}
+	imo.sugar = logger.Logger.Sugar()
+	imo.config = appconfig
+
+	// imo.activeSessions = &hazelcast.Map{}
+	// imo.allSessions = &hazelcast.Map{}
+	// imo.expiredSessions = &hazelcast.Map{}
+	// imo.revokedSessions = &hazelcast.Map{}
+
+	//imo.sessionRepository = sr
+
+	// init the hazelcast connection
+	hz, err := imo.InitHazelcast()
+	if err != nil {
+		imo.sugar.Errorf("failed to init hazelcast connection: %v", err)
+	} else {
+		imo.sugar.Infof("hazelcast connection initialized")
+		(*isCacheReady) = true
+	}
+	imo.hzClient = hz
 
 	return IMORepositoryResult{
-		IMORepository: &imor,
+		IMORepository: &imo,
 	}
 }
 
-func (imo *IMORepository) DiscoverPeers(done chan bool) {
-	switch imo.config.PeerCommunication.DiscoveryMethod {
-	case "kube-api":
-		imo.sugar.Infof("Starting to discover peers")
-		time.Sleep(time.Second * 20) // wait for kube-api to be ready TODO: configurable
+func (imo *IMORepository) InitHazelcast() (*hazelcast.Client, error) {
+	// init a hazelcast client
 
-		addresses, err := imo.getPeerIPAddressesUsingKubeAPI()
+	// clusterConfig := cluster.Config{
+	// 	Name: "ostiki-hz-cluster",
+	// }
+
+	clusterConfig := cluster.Config{}
+	hzConfig := hazelcast.Config{
+		ClientName: "localhost",
+		Cluster:    clusterConfig,
+	}
+
+	client, err := hazelcast.StartNewClientWithConfig(context.TODO(), hzConfig)
+	if err != nil {
+		imo.sugar.Errorf("failed to start hazelcast client: %v", err)
+		return nil, err
+	}
+	imo.hzClient = client
+
+	client.AddLifecycleListener(func(event hazelcast.LifecycleStateChanged) {
+		imo.sugar.Infof("hazelcast lifecycle event: %+v", event)
+		imo.sugar.Infof("State: %v", event.State.String())
+		imo.sugar.Infof("State: %v", event.EventName())
+	})
+
+	// client.AddDistributedObjectListener(
+	// 	context.TODO(),
+	// 	func(e hazelcast.DistributedObjectNotified) {
+	// 		imo.sugar.Infof("EventType: %s", e.EventType)
+	// 		imo.sugar.Infof("ObjectName: %s", e.ObjectName)
+	// 	},
+	// )
+
+	imo.sugar.Infof("hazelcast client started")
+	if imo.hzClient == nil {
+		imo.sugar.Infof("hazelcast client is nil, what can I do sometimes?")
+	}
+
+	if imo.hzClient != nil {
+		allObj, err := imo.hzClient.GetMap(context.TODO(), "sessions-all")
 		if err != nil {
-			imo.sugar.Errorf("Failed to get peer IP addresses using kube-api: %+v", err)
-			break
+			imo.sugar.Errorf("failed to get map sessions-all: %v", err)
+			//return nil, err
 		}
-		imo.PeerIPAddresses = addresses
-	case "manual":
-		imo.sugar.Infof("Using manually entered peer IP addresses from config")
-		imo.PeerIPAddresses = imo.config.PeerCommunication.Peers
+
+		expiredObj, err := imo.hzClient.GetMap(context.TODO(), "sessions-expired")
+		if err != nil {
+			imo.sugar.Errorf("failed to get map sessions-expired: %v", err)
+		}
+
+		activeObj, err := imo.hzClient.GetMap(context.TODO(), "sessions-active")
+		if err != nil {
+			imo.sugar.Errorf("failed to get map sessions-active: %v", err)
+		}
+
+		revokedObj, err := imo.hzClient.GetMap(context.TODO(), "sessions-revoked")
+		if err != nil {
+			imo.sugar.Errorf("failed to get map sessions-revoked: %v", err)
+		}
+
+		imo.activeSessions = activeObj
+		imo.expiredSessions = expiredObj
+		imo.revokedSessions = revokedObj
+		imo.allSessions = allObj
 	}
 
-	done <- true
+	return client, nil
 }
 
-func (imo *IMORepository) getPeerIPAddressesUsingKubeAPI() ([]string, error) {
-	if imo.config.PeerCommunication.Namespace == "" {
-		return nil, fmt.Errorf("No namespace specified for kube-api")
-	}
-	imo.sugar.Infof("Using kube-api for peer discovery")
-	cfg, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get in-cluster config: %+v", err)
+func (imo *IMORepository) GetHZClient() *hazelcast.Client {
+	return imo.hzClient
+}
+
+func (imo *IMORepository) FillSessionsIntoCache(scanType string, sessions []models.Session) error {
+	imo.sugar.Infof("Starting FillSessionsIntoCache with scanType %s, Got %d sessions", scanType, len(sessions))
+
+	if imo.allSessions == nil {
+		return errors.New("imo.allSessions is nil")
 	}
 
-	clientset, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get kube client-set: %+v", err)
-	}
+	timeNow := strconv.FormatInt(time.Now().Unix(), 10)
+	for _, session := range sessions {
+		yes, _ := imo.allSessions.ContainsKey(context.TODO(), session.SessID)
+		if !yes {
+			imo.allSessions.Put(context.TODO(), session.SessID, session)
+		}
 
-	pods, err := clientset.CoreV1().Pods(
-		imo.config.PeerCommunication.Namespace).List(
-		context.TODO(),
-		v1.ListOptions{},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get pods from kube-api query: %+v", err)
-	}
-
-	myIP := utils.GetOutboundIP().String()
-	var peerIPAddresses []string
-	for _, pod := range pods.Items {
-		if pod.Status.PodIP == "" || pod.Status.PodIP == myIP || pod.Status.PodIP == "127.0.0.1" {
+		if session.Expire > timeNow && session.IsRevoked == false {
+			imo.activeSessions.Put(context.TODO(), session.SessID, session)
 			continue
 		}
-		peerIPAddresses = append(peerIPAddresses, pod.Status.PodIP)
-	}
-
-	return peerIPAddresses, nil
-}
-
-func (imo *IMORepository) SendMessageToPeers(msg string, peerIPAddresses []string) {
-	var addr string
-
-	if len(peerIPAddresses) == 0 {
-		return
-	}
-
-	for _, peerIPAddress := range peerIPAddresses {
-		addr = fmt.Sprintf("%s:%d", peerIPAddress, appconfig.GetAppConfig().PeerCommunication.Port)
-		imo.sugar.Infof("Sending message %s to %s", msg, addr)
-
-		conn, _ := net.Dial("udp", addr)
-
-		_, err := conn.Write([]byte(msg))
-		if err != nil {
-			log.Printf("BroadcastMessage.Error: %s\n", err)
-		}
-		defer conn.Close()
-	}
-}
-
-func (imo *IMORepository) SendMessageToPeer(msg string, peerIPAddress string) {
-	imo.sugar.Infof("Received req to send peer message %s to %s", msg, peerIPAddress)
-	imo.sugar.Infof("Sending message %s to %s", msg, peerIPAddress)
-
-	conn, err := net.Dial("udp", peerIPAddress)
-	if err != nil {
-		imo.sugar.Errorf("Failed to connect to peer %s: %+v", peerIPAddress, err)
-		return
-	}
-
-	_, err = conn.Write([]byte(msg))
-	if err != nil {
-		imo.sugar.Errorf("DirectMessage.Error: %s\n", err)
-	}
-	defer conn.Close()
-}
-
-func (imo *IMORepository) ListenClusterMessages() {
-	imo.sugar.Infof("Starting to listen UDP on %d", appconfig.GetAppConfig().PeerCommunication.Port)
-	listenAddr := fmt.Sprintf(":%d", appconfig.GetAppConfig().PeerCommunication.Port)
-	pc, _ := net.ListenPacket("udp", listenAddr)
-	for {
-		buf := make([]byte, 1024)
-
-		n, addr, err := pc.ReadFrom(buf)
-		if err != nil {
-			fmt.Printf("Error: %s\n", err)
+		if session.Expire <= timeNow && session.IsRevoked == false {
+			imo.expiredSessions.Put(context.TODO(), session.SessID, session)
 			continue
 		}
-
-		msg := string(buf[:n])
-		msg = strings.TrimSpace(msg)
-
-		imo.sugar.Infof("ListenClusterMessages(): Received message %s from %s", msg, addr)
-		imo.checkMessage(addr, msg)
-	}
-}
-
-func (imo *IMORepository) Pinger() {
-	imo.sugar.Infof("Starting to ping peers")
-	for {
-		imo.SendMessageToPeers("ping", imo.PeerIPAddresses)
-		time.Sleep(time.Second * 60)
-	}
-}
-
-func (imo *IMORepository) GetPeerIPAddresses() []string {
-	return imo.PeerIPAddresses
-}
-
-func (imo *IMORepository) SetGroups(groups []models.TicketGroup) {
-	imo.groups = groups
-}
-
-func (imo *IMORepository) GetGroups() []models.TicketGroup {
-	return imo.groups
-}
-
-func (imo *IMORepository) SetSessions(sessions []models.Session) {
-	imo.sessions = sessions
-	// write to db as well.
-}
-
-func (imo *IMORepository) GetSessions() []models.Session {
-	return imo.sessions
-}
-
-func (imo *IMORepository) DeleteSession(sessionID string, informPeers bool) {
-	for i, session := range imo.sessions {
-		if session.SessID == sessionID {
-			imo.sessions = append(imo.sessions[:i], imo.sessions[i+1:]...)
-			break
+		if session.IsRevoked == true {
+			imo.revokedSessions.Put(context.TODO(), session.SessID, session)
 		}
 	}
 
-	if informPeers {
-		peerMsg := "upd, session"
-		imo.SendMessageToPeers(peerMsg, imo.PeerIPAddresses)
-	}
-}
-
-func (imo *IMORepository) GetSessionsByEmail(email string) []models.Session {
-	var sessions []models.Session
-	for _, session := range imo.sessions {
-		if session.SessionOwner == email {
-			sessions = append(sessions, session)
-		}
-	}
-	return sessions
-}
-
-func (imo *IMORepository) AddSession(session models.Session) error {
-	err := imo.sessionRepository.CreateSession(&session)
-	if err != nil {
-		return err
-	}
-
-	imo.sessions = append(imo.sessions, session)
-	// INFORM PEERS
-	peerMsg := "upd, session"
-	imo.SendMessageToPeers(peerMsg, imo.PeerIPAddresses)
+	imo.sugar.Infof("finished adding sessions to cache")
 
 	return nil
 }
 
-func (imo *IMORepository) checkMessage(addr net.Addr, msg string) {
-	msgParts := strings.Split(msg, ",")
+func (imo *IMORepository) GetSessionsFromCache(scanType string) ([]models.Session, error) {
+	result := []models.Session{}
 
-	switch msgParts[0] {
-	case "upd":
-		tableName := strings.TrimSpace(msgParts[1])
-		imo.sugar.Infof(
-			"Received update message for table %s from %s",
-			tableName,
-			addr,
-		)
-		imo.updateTableFromDB(tableName)
-	default:
-		imo.sugar.Infof("Received unknown message %s from %s", msg, addr)
-	}
-}
-
-func (imo *IMORepository) updateTableFromDB(tableName string) {
-	imo.sugar.Infof("Updating table [%s] from DB", tableName)
-	switch tableName {
-	case "session":
-		// at this point, we need to retrieve sessions from db and load into imo.sessions
-		sessions, err := imo.sessionRepository.GetSessions("")
-		if err != nil {
-			imo.sugar.Errorf("Failed to get sessions from db: %+v", err)
-			return
+	switch scanType {
+	case "active":
+		activeSessions, _ := imo.activeSessions.GetEntrySet(context.TODO())
+		for _, session := range activeSessions {
+			result = append(result, session.Value.(models.Session))
 		}
-		imo.sessions = sessions
-		imo.sugar.Infof("imp.session object renewed from DB: %+v", imo.sessions)
+	case "expired":
+		expiredSessions, _ := imo.expiredSessions.GetEntrySet(context.TODO())
+		for _, session := range expiredSessions {
+			result = append(result, session.Value.(models.Session))
+		}
+	case "revoked":
+		revokedSessions, _ := imo.revokedSessions.GetEntrySet(context.TODO())
+		for _, session := range revokedSessions {
+			result = append(result, session.Value.(models.Session))
+		}
+	case "all":
+		if imo.allSessions == nil {
+			return nil, errors.New("all sessions cache not initialized")
+		}
+
+		allSessions, _ := imo.allSessions.GetEntrySet(context.TODO())
+		for _, session := range allSessions {
+			result = append(result, session.Value.(models.Session))
+		}
 	default:
-		imo.sugar.Errorf("Unknown table name %s", tableName)
+		return nil, fmt.Errorf("invalid scan type %s", scanType)
 	}
+
+	return result, nil
 }
 
-// func (imo *IMORepository) checkMessage(addr net.Addr, msg string) {
-// 	if len(msg) < 3 {
-// 		log.Printf("Invalid message: %s\n", msg)
-// 		return
-// 	}
-
-// 	remoteIP := strings.Split(addr.String(), ":")[0]
-// 	myIP := utils.GetOutboundIP()
-
-// 	msgType := msg[0:3]
-// 	imo.logger.Logger.Sugar().Infof("Received message [%s] from %s", msg, remoteIP)
-
-// 	switch msgType {
-// 	case "000":
-// 		if remoteIP == myIP.String() {
-// 			return
-// 		}
-// 		imo.logger.Logger.Sugar().Infof("Received handshake req from %s", remoteIP)
-// 		parts := strings.Split(addr.String(), ":")
-
-// 		//imo.PeerIPAddresses = appendIfMissing(imo.PeerIPAddresses, parts[0])
-// 		imo.PeerIPAddresses = addIpIntoMemberList(parts[0], imo.PeerIPAddresses)
-
-// 		imo.logger.Logger.Sugar().Infof("Sending handshake resp to %s", parts[0])
-// 		imo.SendMessageToPeer(
-// 			"001",
-// 			fmt.Sprintf("%s:%d", parts[0], 8671),
-// 		)
-// 	case "001":
-// 		if remoteIP == myIP.String() {
-// 			return
-// 		}
-
-// 		imo.logger.Logger.Sugar().Infof("Received handshake resp from %s", remoteIP)
-// 		parts := strings.Split(addr.String(), ":")
-// 		//imo.PeerIPAddresses = appendIfMissing(imo.PeerIPAddresses, parts[0])
-
-// 		imo.PeerIPAddresses = addIpIntoMemberList(parts[0], imo.PeerIPAddresses)
-// 	case "100":
-// 		imo.analyze_message(msg)
-// 	default:
-// 		if remoteIP == myIP.String() {
-// 			return
-// 		}
-
-// 		fmt.Printf("Unknown message: %s\n", msgType)
-// 	}
-// }
-
-// func (imo *IMORepository) analyze_message(msg string) {
-// 	rest := ""
-// 	if len(msg) > 3 {
-// 		rest = msg[4:]
-// 	}
-
-// 	fmt.Printf("Update message received for [%s]\n", rest)
-// 	switch rest {
-// 	case "domain":
-// 		fmt.Printf("Domain update received\n")
-// 	case "group":
-// 		fmt.Printf("Group update received\n")
-// 	case "ticket":
-// 		fmt.Printf("Ticket update received\n")
-// 	default:
-// 		fmt.Printf("Unknown update received: %s\n", rest)
-// 	}
-// }
-
-// // func appendIfMissing(slice []string, i string) []string {
-// // 	for _, ele := range slice {
-// // 		if ele == i {
-// // 			fmt.Println(i)
-// // 			return slice
-// // 		}
-// // 	}
-// // 	slice = append(slice, i)
-// // 	return slice
-// // }
-
-// func addIpIntoMemberList(ip string, memberList []string) []string {
-// 	if ip == "" || ip == "127.0.0.1" {
-// 		return memberList
-// 	}
-// 	ip = strings.TrimSpace(ip)
-
-// 	for _, ele := range memberList {
-// 		if ele == ip {
-// 			return memberList
-// 		}
-// 	}
-// 	memberList = append(memberList, ip)
-// 	return memberList
-// }
+func (imo *IMORepository) GetCacheObject(objname string) (*hazelcast.Map, error) {
+	obj, err := imo.hzClient.GetMap(context.TODO(), objname)
+	if err != nil {
+		imo.sugar.Errorf("failed to get map %s: %v", objname, err)
+		return nil, err
+	}
+	return obj, nil
+}

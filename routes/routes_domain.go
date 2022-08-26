@@ -11,8 +11,10 @@ import (
 )
 
 func ListDomains(c *gin.Context, vars middleware.GinHandlerVars) {
+	sugar := vars.Logger.Sugar()
 	domainRepository := vars.DomainRepository
 
+	sugar.Infof("we are in list domains")
 	domains, err := domainRepository.ListDomains()
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -64,19 +66,24 @@ func GetDomain(c *gin.Context, vars middleware.GinHandlerVars) {
 }
 
 func DeleteDomain(c *gin.Context, vars middleware.GinHandlerVars) {
+	sugar := vars.Logger.Sugar()
 	domainRepository := vars.DomainRepository
 	permissionRepository := vars.PermissionRepository
+	sugar.Infof("we are in delete domain")
 
 	var domainPath map[string]string
 
 	err := c.ShouldBindJSON(&domainPath)
 	if err != nil {
+		sugar.Infof("error in bind json")
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Domain name couldn't found. Check your request again.",
 		})
 		return
 	}
+
+	sugar.Infof("======================> domainPath: %s\n", domainPath["domainPath"])
 
 	userEmail := c.Request.Header.Get("email")
 
